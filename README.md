@@ -40,52 +40,64 @@ Le système implémente les règles de détection suivantes :
 
 ---
 
-## 🚀 Installation & Lancement
+## 🚀 Guide de Lancement (Projet Cloné)
 
-### 1. Pré-requis
-- Python 3.12+
-- Django 5.1.7
+Suivez ces étapes pour mettre en place le projet localement après l'avoir cloné depuis GitHub.
 
-### 2. Configuration
+### 1. Clonage du Projet
 ```bash
-# Cloner le dépôt
-git clone <url-du-depot>
-cd secure-data-monitor
+git clone https://github.com/Dak6000/SecureData.git
+cd SecureData
+```
 
-# Créer l'environnement virtuel
+### 2. Configuration de l'Environnement
+Il est fortement recommandé d'utiliser un environnement virtuel pour isoler les dépendances.
+```bash
+# Création de l'env (Windows)
 python -m venv venv
-source venv/bin/activate  # Sur Windows: venv\Scripts\activate
+.\venv\Scripts\activate
 
-# Installer les dépendances
+# Création de l'env (Linux/macOS)
+python3 -m venv venv
+source venv/bin/activate
+```
+
+### 3. Installation des Dépendances
+```bash
 pip install -r requirements.txt
 ```
 
-### 3. Initialisation
+### 4. Initialisation de la Base de Données
+Cette étape prépare les tables et configure le moteur SIEM.
 ```bash
 # Appliquer les migrations
 python manage.py migrate
 
-# Initialiser les règles SIEM (Crucial)
+# Initialiser les règles SIEM (OBLIGATOIRE pour voir les règles s'afficher)
 python manage.py init_rules
 
-# Créer un super-utilisateur
+# Créer votre compte Administrateur
 python manage.py createsuperuser
 ```
 
-### 4. Lancement
+### 5. Lancement du Serveur
 ```bash
 python manage.py runserver
 ```
-Accédez à l'application via `http://127.0.0.1:8000/`.
+L'application sera disponible sur [http://127.0.0.1:8000/](http://127.0.0.1:8000/).
+
+---
+
+## 💡 Notes Importantes
+- **Règles SIEM** : Si vous ne voyez pas les règles dans le dashboard, relancez `python manage.py init_rules`.
+- **Compte de Test** : Après avoir créé un super-utilisateur, vous pouvez accéder au panneau d'administration (`/admin`) pour créer des utilisateurs avec les rôles `analyste` ou `utilisateur`.
 
 ---
 
 ## 🎨 Technologies Utilisées
-- **Framework** : Django 5.1.7
-- **Frontend** : Tailwind CSS, Javascript (Vanilla)
-- **Graphiques** : Chart.js
-- **Sécurité** : Signaux Django, Middleware personnalisé, Rate Limiting
-- **Base de données** : SQLite / PostgreSQL
+- **Backend** : Django 5.1.7, Python-dotenv
+- **Frontend** : Tailwind CSS (Custom), Chart.js 4.x
+- **Base de données** : SQLite (par défaut) / Support PostgreSQL inclus
 
 ---
 
