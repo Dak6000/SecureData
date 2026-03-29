@@ -1,0 +1,284 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="max-w-screen-2xl mx-auto">
+    <!-- En-tête Dynamique -->
+    <div class="mb-10">
+        <h1 class="text-4xl font-semibold text-slate-900 dark:text-white">
+            {% if user.role == 'admin' or user.role == 'analyste' %}
+                Analyse des Incidents Actifs & Finances
+            {% else %}
+                Résumé de votre Activité Financière
+            {% endif %}
+        </h1>
+        <p class="text-slate-600 dark:text-slate-400 mt-2">Menaces non résolues et liquidité du SIEM en temps réel</p>
+    </div>
+
+    {% if user.role == 'admin' or user.role == 'analyste' %}
+    <!-- VUE ADMINISTRATEUR - CARDS FINANCIÈRES -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <div class="glass p-6 rounded-3xl border border-emerald-500/20 shadow-lg">
+            <p class="text-xs text-emerald-600 dark:text-emerald-500 uppercase tracking-widest font-bold">Liquidité Totale</p>
+            <p class="text-3xl font-bold mt-2">{{ stats.total_liquidity|floatformat:2 }} <span class="text-xs font-normal opacity-60">FCFA</span></p>
+        </div>
+        <div class="glass p-6 rounded-3xl border border-violet-500/20 shadow-lg">
+            <p class="text-xs text-violet-600 dark:text-violet-500 uppercase tracking-widest font-bold">Capital Moyen</p>
+            <p class="text-3xl font-bold mt-2">{{ stats.avg_balance|floatformat:2 }} <span class="text-xs font-normal opacity-60">FCFA</span></p>
+        </div>
+        <div class="glass p-6 rounded-3xl border border-slate-400/20 shadow-lg">
+            <p class="text-xs text-slate-500 uppercase tracking-widest font-bold">Alertes Mensuelles</p>
+            <p class="text-3xl font-bold mt-2">{{ stats.history|length }}</p>
+        </div>
+        <div class="glass p-6 rounded-3xl border border-emerald-500/20 shadow-lg">
+            <p class="text-xs text-emerald-600 dark:text-emerald-500 uppercase tracking-widest font-bold">Système Uptime</p>
+            <p class="text-3xl font-bold mt-2 text-emerald-600 dark:text-emerald-400">99.9%</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+        <!-- Graphique 1 : Événements par Type -->
+        <div class="glass rounded-3xl p-8 border border-black/5 dark:border-white/10 shadow-xl">
+            <h3 class="text-xl font-medium mb-8 italic">Types d'Incidents</h3>
+            <canvas id="typeChart" height="250"></canvas>
+        </div>
+
+        <!-- Graphique 2 : Distribution des Comptes par Rôle -->
+        <div class="glass rounded-3xl p-8 border border-black/5 dark:border-white/10 shadow-xl">
+            <h3 class="text-xl font-medium mb-8 italic">Répartition des Comptes</h3>
+            <canvas id="classChart" height="250"></canvas>
+        </div>
+
+        <!-- Graphique 3 : Niveaux de Sévérité (Actives) -->
+        <div class="glass rounded-3xl p-8 border border-black/5 dark:border-white/10 shadow-xl">
+            <h3 class="text-xl font-medium mb-8 italic">Niveaux de Sévérité (Alertes Actives)</h3>
+            <canvas id="severityChart" height="250"></canvas>
+        </div>
+    </div>
+
+    <!-- Graphique 4 : Historique Temporel -->
+    <div class="glass rounded-3xl p-8 border border-black/5 dark:border-white/10 shadow-xl mb-12">
+        <h3 class="text-xl font-medium mb-8 italic">Activités de Sécurité (7 derniers jours)</h3>
+        <div style="height: 250px;">
+            <canvas id="historyChart"></canvas>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- VUE UTILISATEUR SIMPLE -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+        <div class="glass rounded-3xl p-10 text-center animate-pulse-slow border border-emerald-500/20 shadow-2xl">
+            <p class="text-xs text-slate-400 uppercase tracking-widest mb-6 font-bold">Fortune Totale Accumulée</p>
+            <p class="text-7xl font-bold bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 bg-clip-text text-transparent drop-shadow-sm">
+                {{ stats.total_solde|floatformat:2 }} <span class="text-2xl">FCFA</span>
+            </p>
+            <div class="mt-10 flex justify-center gap-6">
+                <div class="px-6 py-2 glass rounded-2xl border border-white/5">
+                    <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Comptes Attribués</p>
+                    <p class="text-xl font-semibold">{{ stats.total_accounts }}</p>
+                </div>
+                <div class="px-6 py-2 glass rounded-2xl border border-white/5">
+                    <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Statut Global</p>
+                    <p class="text-xl font-semibold text-emerald-500">OPTIMAL</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass rounded-3xl p-8 shadow-xl">
+            <h3 class="text-xl font-medium mb-6 flex items-center gap-3">
+                <i class="fa-solid fa-list-check text-violet-400"></i> Vos Comptes & Liquidités
+            </h3>
+            <div class="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                {% for acc in stats.accounts %}
+                <div class="flex justify-between items-center p-5 rounded-2xl bg-white/5 border border-white/5 hover:border-violet-500/30 transition shadow-inner">
+                    <div>
+                        <p class="text-sm font-bold text-white">{{ acc.id_compte }}</p>
+                        <p class="text-[10px] text-slate-500 uppercase tracking-widest">{{ acc.titulaire }}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-lg font-bold text-emerald-400">{{ acc.solde }} FCFA</p>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-slate-500 italic text-center py-20">Aucun compte trouvé</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Scripts pour Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if user.role == 'admin' or user.role == 'analyste' or user.is_superuser %}
+        
+        // Détection dynamique du thème pour Chart.js
+        const isDayMode = document.documentElement.classList.contains('dark');
+        const chartColor = isDayMode ? '#8b5cf6' : '#8b5cf6';
+        const gridColor = isDayMode ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)';
+
+        // Configuration Chart.js globale
+        Chart.defaults.color = chartColor;
+        Chart.defaults.font.family = "'Inter', sans-serif";
+
+        // 1. Chart par Type
+        new Chart(document.getElementById('typeChart').getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: [{% for item in stats.by_type %}'{{ item.event_type|upper }}',{% endfor %}],
+                datasets: [{
+                    data: [{% for item in stats.by_type %}{{ item.count }},{% endfor %}],
+                    backgroundColor: ['#8b5cf6', '#3b82f6', '#ef4444', '#f59e0b', '#10b981'],
+                    borderWidth: 0,
+                    hoverOffset: 20
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                cutout: '75%'
+            }
+        });
+
+        // 2. Chart Distribution des Comptes par Rôle
+        const classLabels = [{% for item in stats.role_dist %}'{{ item.owner__role|upper }}',{% endfor %}];
+        const classColors = classLabels.map(role => {
+            if (role === 'ADMIN') return '#9f1239';      // Rouge Rubis
+            if (role === 'ANALYSTE') return '#7c3aed';   // Violet
+            return '#059669';                           // Émeraude pour Utilisateur
+        });
+
+        new Chart(document.getElementById('classChart').getContext('2d'), {
+            type: 'polarArea',
+            data: {
+                labels: classLabels,
+                datasets: [{
+                    data: [{% for item in stats.role_dist %}{{ item.count }},{% endfor %}],
+                    backgroundColor: classColors,
+                    borderWidth: 1,
+                    borderColor: gridColor
+                }]
+            },
+            options: {
+                scales: {
+                    r: { 
+                        grid: { color: gridColor }, 
+                        ticks: { display: false },
+                        pointLabels: { color: chartColor, font: { size: 12 } }
+                    }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // 3. Chart par Sévérité (Alertes Actives)
+        const sevLabels = [{% for item in stats.by_severity %}'{{ item.alert_level|upper }}',{% endfor %}];
+        const sevColors = sevLabels.map(label => {
+            if (label.includes('CRITICAL')) return '#ef4444';
+            if (label.includes('HIGH')) return '#f59e0b';
+            if (label.includes('MEDIUM')) return '#3b82f6';
+            return '#10b981'; // Low
+        });
+
+        new Chart(document.getElementById('severityChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: sevLabels,
+                datasets: [{
+                    label: 'Alertes',
+                    data: [{% for item in stats.by_severity %}{{ item.count }},{% endfor %}],
+                    backgroundColor: sevColors,
+                    borderRadius: 12
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: { 
+                    y: { 
+                        beginAtZero: true, 
+                        grid: { color: gridColor },
+                        ticks: { color: chartColor }
+                    },
+                    x: { 
+                        grid: { display: false },
+                        ticks: { color: chartColor }
+                    }
+                }
+            }
+        });
+
+        // 4. Chart Historique (7 derniers jours)
+        const ctx = document.getElementById('historyChart').getContext('2d');
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(139, 92, 246, 0.5)');
+        gradient.addColorStop(1, 'rgba(139, 92, 246, 0)');
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [{% for item in stats.history %}'{{ item.day }}',{% endfor %}],
+                datasets: [{
+                    label: 'Alertes détectées',
+                    data: [{% for item in stats.history %}{{ item.count }},{% endfor %}],
+                    borderColor: '#8b5cf6',
+                    borderWidth: 3,
+                    backgroundColor: gradient,
+                    fill: true,
+                    tension: 0.45,
+                    pointRadius: 5,
+                    pointBackgroundColor: '#8b5cf6',
+                    pointBorderColor: isDayMode ? '#fff' : 'rgba(255,255,255,0.8)',
+                    pointBorderWidth: 2,
+                    pointHoverRadius: 8,
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: isDayMode ? 'rgba(241, 245, 249, 0.9)' : 'rgba(15, 23, 42, 0.9)',
+                        titleColor: '#8b5cf6',
+                        bodyColor: chartColor,
+                        bodyFont: { size: 14 }
+                    }
+                },
+                scales: { 
+                    y: { 
+                        beginAtZero: true,
+                        ticks: { stepSize: 1, color: chartColor },
+                        grid: { color: gridColor } 
+                    },
+                    x: { 
+                        ticks: { color: chartColor },
+                        grid: { display: false } 
+                    }
+                }
+            }
+        });
+
+        {% endif %}
+    });
+</script>
+
+<style>
+    .animate-pulse-slow {
+        animation: pulse-slow 8s infinite cubic-bezier(0.4, 0, 0.6, 1);
+    }
+    @keyframes pulse-slow {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.9; transform: scale(0.98); }
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(139, 92, 246, 0.3);
+        border-radius: 10px;
+    }
+</style>
+
+{% endblock %}

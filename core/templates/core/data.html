@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="max-w-screen-2xl mx-auto">
+    <div class="mb-10">
+        <h1 class="text-4xl font-semibold text-slate-900 dark:text-white">Comptes Bancaires</h1>
+        <p class="text-slate-600 dark:text-slate-400 mt-1">Données sensibles • Accès strictement contrôlé</p>
+    </div>
+
+    <!-- Section Transfert / Actions -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
+        <!-- Liste des comptes (Tableau) -->
+        <div class="lg:col-span-2 glass rounded-3xl overflow-hidden shadow-2xl">
+            <div class="px-8 pt-6 pb-4 border-b border-slate-200 dark:border-white/10 flex justify-between items-center">
+                <h2 class="text-xl font-semibold flex items-center gap-3">
+                    <i class="fa-solid fa-list-ul"></i>
+                    Liste des comptes
+                </h2>
+                <span class="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                    {{ comptes|length }} compte{{ comptes|pluralize:"s" }} chargé{{ comptes|pluralize:"s" }}
+                </span>
+            </div>
+
+            <div class="p-8 overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-white/10">
+                            <th class="py-5 text-left">N° Compte / Titulaire</th>
+                            <th class="py-5 text-left">Solde Actuel</th>
+                            <th class="py-5 text-left">Classification</th>
+                            {% if user.role == 'admin' or user.is_superuser %}
+                            <th class="py-5 text-center">Gérer Capital</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-white/10">
+                        {% for compte in comptes %}
+                        <tr class="hover:bg-slate-50 dark:hover:bg-white/5 transition-all">
+                            <td class="py-7">
+                                <p class="font-mono font-medium text-slate-900 dark:text-white">{{ compte.id_compte }}</p>
+                                <p class="text-sm text-slate-500 italic">{{ compte.titulaire }}</p>
+                            </td>
+                            <td class="py-7">
+                                <span class="font-semibold text-emerald-600 dark:text-emerald-400 text-lg">
+                                    {{ compte.solde }} <span class="text-xs">FCFA</span>
+                                </span>
+                            </td>
+                            <td class="py-7">
+                                <span class="inline-flex items-center px-5 py-2 rounded-3xl text-xs font-semibold
+                                    {% if compte.classification == 'top_secret' %}bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300
+                                    {% elif compte.classification == 'secret' %}bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300
+                                    {% else %}bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300{% endif %}">
+                                    {{ compte.classification|upper }}
+                                </span>
+                            </td>
+                            {% if user.role == 'admin' or user.is_superuser %}
+                            <td class="py-7">
+                                <form action="{% url 'update_balance' compte.id %}" method="POST" class="flex items-center gap-2 justify-center">
+                                    {% csrf_token %}
+                                    <input type="number" step="0.01" name="new_balance" required placeholder="Nouveau capital"
+                                           class="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs w-28 focus:outline-none focus:border-violet-500">
+                                    <button type="submit" class="w-8 h-8 rounded-lg bg-violet-600/20 text-violet-500 hover:bg-violet-600 hover:text-white transition flex items-center justify-center" title="Mettre à jour">
+                                        <i class="fa-solid fa-check"></i>
+                                    </button>
+                                </form>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="py-24 text-center">
+                            <div class="text-slate-400 dark:text-slate-500">
+                                <i class="fa-solid fa-folder-open text-6xl mb-6 opacity-30"></i>
+                                <p class="text-xl font-medium mb-6">Aucun compte bancaire enregistré pour le moment</p>
+                                <form action="{% url 'create_account' %}" method="POST">
+                                    {% csrf_token %}
+                                    <button type="submit" class="px-8 py-4 bg-emerald-600 text-white rounded-2xl font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-500/20 flex items-center gap-3 mx-auto">
+                                        <i class="fa-solid fa-plus-circle"></i>
+                                        Créer mon premier compte
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Formulaire de Virement -->
+        <div class="lg:col-span-1">
+            <div class="glass rounded-3xl p-8 border border-white/10 sticky top-24 shadow-2xl group hover:border-violet-500/30 transition-all">
+                <h3 class="text-2xl font-semibold mb-6 flex items-center gap-3">
+                    <i class="fa-solid fa-paper-plane text-violet-500"></i>
+                    Nouveau Virement
+                </h3>
+                
+                <form action="{% url 'transfer_funds' %}" method="POST" class="space-y-6">
+                    {% csrf_token %}
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-2">Choisir mon compte source</label>
+                        <select name="source_id" required class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-violet-500 transition">
+                            {% for c in comptes %}
+                                {% if c.owner == user or user.is_superuser %}
+                                <option value="{{ c.id_compte }}">{{ c.id_compte }} (Solde: {{ c.solde }} FCFA)</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-2">N° Compte Destinataire</label>
+                        <input type="text" name="target_id" required placeholder="Ex: SDM-999-XXX"
+                               class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-violet-500 transition">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-2">Montant (FCFA)</label>
+                        <input type="number" step="0.01" name="amount" required placeholder="0.00"
+                               class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-violet-500 transition text-2xl font-semibold text-violet-400">
+                    </div>
+
+                    <button type="submit" 
+                            class="w-full py-5 bg-violet-600 text-white rounded-2xl font-bold text-lg hover:bg-violet-700 transition shadow-lg shadow-violet-500/20 flex items-center justify-center gap-3">
+                        <i class="fa-solid fa-shield-check"></i>
+                        Confirmer le Virement
+                    </button>
+                    
+                    <p class="text-center text-[10px] text-slate-500 mt-4 uppercase tracking-[2px]">
+                        Opération hautement sécurisée par SDM-Shield
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-lg mx-auto mt-20">
+    <div class="glass rounded-3xl p-12 text-center">
+        <div class="text-6xl mb-6">🚫</div>
+        <h2 class="text-3xl font-semibold mb-4">Accès Bloqué</h2>
+        <p class="text-slate-600 dark:text-slate-300 mb-8">Tentative d’attaque détectée. L’événement a été journalisé et une alerte a été envoyée.</p>
+        <a href="/data/" class="inline-block bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-3xl font-medium">Retour aux données</a>
+    </div>
+</div>
+{% endblock %}

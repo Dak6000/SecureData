@@ -1,0 +1,291 @@
+<!-- templates/base.html -->
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureData Monitor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        :root {
+            /* THÈME NUIT (GlassAdmin Premium) */
+            --bg-color: #0c0d1b;
+            --text-color: #f1f5f9;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent-color: #a855f7;
+            --card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+            
+            /* Status Colors from Image */
+            --status-completed: #10b981;
+            --status-pending: #f59e0b;
+            --status-processing: #3b82f6;
+            --status-cancelled: #ef4444;
+        }
+
+        .dark {
+            /* THÈME JOUR (Frosted Quartz) */
+            --bg-color: #fcfaff;
+            --text-color: #1e293b;
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(139, 92, 246, 0.15);
+            --accent-color: #8b5cf6;
+            --card-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+
+            --status-completed: #059669;
+            --status-pending: #d97706;
+            --status-processing: #2563eb;
+            --status-cancelled: #dc2626;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.4s ease, color 0.4s ease;
+            background-image: radial-gradient(circle at 50% 0%, rgba(168, 85, 247, 0.05) 0%, transparent 50%);
+        }
+
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--card-shadow);
+        }
+
+        .sidebar-glass {
+            background: rgba(23, 23, 37, 0.82);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .dark .sidebar-glass {
+            background: rgba(255, 255, 255, 0.85);
+            border-right: 1px solid rgba(139, 92, 246, 0.1);
+        }
+
+        /* Overrides d'Inversion et Contraste (Cœur du Thème) */
+        
+        /* 1. Force le texte global et les couleurs Tailwind communes en Light Mode (.dark) */
+        .dark .text-white, 
+        .dark .text-slate-50, .dark .text-slate-100, .dark .text-slate-200, .dark .text-slate-300,
+        .dark .dark\:text-white, .dark .dark\:text-slate-100, .dark .dark\:text-slate-200 { 
+            color: #1e293b !important; 
+        }
+        
+        .dark .text-slate-400, .dark .dark\:text-slate-400 { color: #475569 !important; }
+        .dark .text-slate-500, .dark .dark\:text-slate-500 { color: #57657a !important; }
+        .dark .text-slate-600, .dark .dark\:text-slate-600 { color: #334155 !important; }
+
+        /* 2. Force le texte sombre        /* Correction Night Mode (quand aucune classe n'est présente) */
+        html:not(.dark) .text-slate-900, 
+        html:not(.dark) .text-slate-800, 
+        html:not(.dark) .text-black,
+        html:not(.dark) .dark\:text-white { 
+            color: #f1f5f9 !important; 
+        }
+        
+        html:not(.dark) .text-slate-600 { color: #cbd5e1 !important; }
+        html:not(.dark) .text-slate-400 { color: #94a3b8 !important; }
+        
+        /* Boost des opacités en mode Nuit pour la lisibilité */
+        html:not(.dark) .opacity-40 { opacity: 0.65 !important; }
+        html:not(.dark) .opacity-50 { opacity: 0.75 !important; }
+        html:not(.dark) .opacity-60 { opacity: 0.85 !important; }
+
+        /* Utilitaires Globaux Adaptatifs */
+        .theme-text { color: var(--text-color); }
+        .theme-bg { background-color: var(--bg-color); }
+
+        .dark .bg-white\/5, .dark .bg-white\/10 { background-color: rgba(15, 23, 42, 0.08) !important; }
+        .dark .border-white\/5, .dark .border-white\/10, .dark .border-white\/20 { border-color: rgba(15, 23, 42, 0.1) !important; }
+        
+        /* Opacités contrastées pour le mode clair */
+        .dark .opacity-20, .dark .opacity-30, .dark .opacity-40 { opacity: 0.7 !important; } 
+        .dark .opacity-50, .dark .opacity-60 { opacity: 0.85 !important; }
+
+        /* 5. Éléments spécifiques (Inputs, Sidebar) */
+        .dark .silver-text { color: #0f172a !important; }
+        .dark .silver-border { border-color: rgba(15, 23, 42, 0.15) !important; }
+
+        .dark input { 
+            background-color: #ffffff !important; 
+            color: #0f172a !important;
+            border-color: rgba(15, 23, 42, 0.2) !important;
+        }
+        .dark input::placeholder { color: rgba(15, 23, 42, 0.4) !important; }
+
+        /* Correction globale des cartes Glass en mode Light */
+        .dark .glass {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(139, 92, 246, 0.1);
+        }
+
+        /* Ajustements Sidebar et Nav */
+        nav.glass { border-bottom: 1px solid var(--glass-border); }
+        .dark .glass button:not(.bg-violet-600) { 
+            background-color: rgba(15, 23, 42, 0.05) !important;
+            color: #0f172a !important;
+        }
+        .dark .bg-violet-600 { color: #ffffff !important; } /* Keep white text on dark purple buttons */
+        
+        .silver-text { color: #C0C0C0; }
+        .silver-border { border-color: rgba(192, 192, 192, 0.3); }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- NAVBAR -->
+    <nav class="glass fixed top-0 left-0 right-0 z-50">
+        <div class="max-w-screen-2xl mx-auto px-6 py-4 flex items-center justify-between text-[var(--text-color)]">
+            <div class="flex items-center gap-4">
+                <div class="w-9 h-9 bg-violet-600 rounded-2xl flex items-center justify-center text-white font-bold text-2xl">🔒</div>
+                <span class="text-2xl font-semibold tracking-tight">SecureData</span>
+            </div>
+
+            <div class="flex-1 max-w-xl mx-8">
+                <div class="relative">
+                    <input type="text" id="searchInput"
+                           class="w-full bg-white/5 border border-[var(--border-color)] rounded-3xl py-3 px-5 pl-12 text-[var(--text-color)] placeholder:opacity-50 focus:outline-none focus:border-violet-500"
+                           placeholder="Rechercher un événement...">
+                    <i class="fa-solid fa-magnifying-glass absolute left-5 top-4 opacity-50"></i>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-6">
+                <!-- Mode Jour / Nuit -->
+                <button onclick="toggleTheme()" class="text-2xl hover:text-violet-400 transition" id="themeToggle">
+                    <i class="fa-solid fa-sun"></i>
+                </button>
+
+                <!-- Avatar -->
+                <div class="flex items-center gap-3">
+                    <div class="text-right">
+                        <p class="text-sm font-medium">{{ user.username }}</p>
+                        <p class="text-xs text-emerald-400 font-semibold">{{ user.get_role_display }}</p>
+                    </div>
+                    <div class="hidden md:flex items-center space-x-8">
+                    <a href="{% url 'data' %}" class="{% if request.resolver_match.url_name == 'data' %}text-violet-500 font-bold{% else %}opacity-60 hover:opacity-100{% endif %} transition text-sm uppercase tracking-widest">Finances</a>
+                    <a href="{% url 'history' %}" class="{% if request.resolver_match.url_name == 'history' %}text-violet-500 font-bold{% else %}opacity-60 hover:opacity-100{% endif %} transition text-sm uppercase tracking-widest">Historique</a>
+                    <a href="{% url 'profile' %}" class="{% if request.resolver_match.url_name == 'profile' %}text-violet-500 font-bold{% else %}opacity-60 hover:opacity-100{% endif %} transition text-sm uppercase tracking-widest">Mon Profil</a>
+                    
+                    {% if user.role == 'admin' or user.role == 'analyste' or user.is_superuser %}
+                    <div class="h-4 w-px bg-white/10 mx-2"></div>
+                    <a href="{% url 'security_dashboard' %}" class="{% if request.resolver_match.url_name == 'security_dashboard' %}text-violet-500 font-bold{% else %}opacity-60 hover:opacity-100{% endif %} transition text-sm uppercase tracking-widest flex items-center gap-2">
+                        <i class="fa-solid fa-shield-halved text-[10px]"></i> SIEM 
+                    </a>
+                    <a href="{% url 'statistics' %}" class="{% if request.resolver_match.url_name == 'statistics' %}text-violet-500 font-bold{% else %}opacity-60 hover:opacity-100{% endif %} transition text-sm uppercase tracking-widest">Stats</a>
+                    {% endif %}
+
+                    {% if user.role == 'admin' or user.is_superuser %}
+                    <a href="{% url 'manage_rules' %}" class="{% if request.resolver_match.url_name == 'manage_rules' %}text-violet-500 font-bold{% else %}opacity-60 hover:opacity-100{% endif %} transition text-sm uppercase tracking-widest">Règles</a>
+                    {% endif %}
+                </div>
+                    <div class="w-10 h-10 bg-gradient-to-br from-violet-600 to-indigo-600 rounded-2xl flex items-center justify-center text-xl font-bold ring-2 ring-white/10">
+                        {{ user.username|slice:":1"|upper }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="flex pt-20">
+        <!-- SIDEBAR -->
+        <div class="sidebar-glass w-72 h-screen fixed left-0 top-20 p-6 z-40">
+            <div class="space-y-2">
+                {% if user.role == 'admin' or user.role == 'analyste' or user.is_superuser %}
+                <a href="{% url 'security_dashboard' %}" class="flex items-center gap-4 px-5 py-4 rounded-3xl hover:bg-white/10 {% if '/security/dashboard/' in request.path %}bg-white/10{% endif %} transition-all">
+                    <i class="fa-solid fa-gauge-high w-5"></i>
+                    <span class="font-medium">Dashboard Sécurité</span>
+                </a>
+                {% endif %}
+
+                {% if user.role == 'admin' or user.role == 'utilisateur' or user.role == 'analyste' or user.is_superuser %}
+                <a href="{% url 'data' %}" class="flex items-center gap-4 px-5 py-4 rounded-3xl hover:bg-white/10 {% if '/data/' in request.path %}bg-white/10{% endif %} transition-all">
+                    <i class="fa-solid fa-database w-5"></i>
+                    <span class="font-medium">Mes Données</span>
+                </a>
+                
+                <a href="{% url 'history' %}" class="flex items-center gap-4 px-5 py-4 rounded-3xl hover:bg-white/10 {% if '/history/' in request.path %}bg-white/10{% endif %} transition-all">
+                    <i class="fa-solid fa-clock-rotate-left w-5"></i>
+                    <span class="font-medium">Historique</span>
+                </a>
+
+                <a href="{% url 'profile' %}" class="flex items-center gap-4 px-5 py-4 rounded-3xl hover:bg-white/10 {% if '/profile/' in request.path %}bg-white/10{% endif %} transition-all">
+                    <i class="fa-solid fa-user-shield w-5"></i>
+                    <span class="font-medium">Mon Activité</span>
+                </a>
+                {% endif %}
+
+                {% if user.role == 'admin' or user.is_superuser %}
+                <a href="{% url 'users_manage' %}" class="flex items-center gap-4 px-5 py-4 rounded-3xl hover:bg-white/10 {% if '/users/manage/' in request.path %}bg-white/10{% endif %} transition-all">
+                    <i class="fa-solid fa-users-gear w-5"></i>
+                    <span class="font-medium">Gestion Utilisateurs</span>
+                </a>
+                
+                <a href="{% url 'manage_rules' %}" class="flex items-center gap-4 px-5 py-4 rounded-3xl hover:bg-white/10 {% if '/manage-rules/' in request.path %}bg-white/10{% endif %} transition-all">
+                    <i class="fa-solid fa-list-check w-5"></i>
+                    <span class="font-medium">Gestion des Règles</span>
+                </a>
+                {% endif %}
+
+                <a href="/security/statistics/" class="flex items-center gap-4 px-5 py-4 rounded-3xl hover:bg-white/10 {% if '/statistics/' in request.path %}bg-white/10{% endif %} transition-all">
+                    <i class="fa-solid fa-chart-line w-5"></i>
+                    <span class="font-medium">Statistiques</span>
+                </a>
+
+                {% if user.role == 'admin' or user.role == 'analyste' or user.is_superuser %}
+                <a href="{% url 'alerts_list' %}" class="flex items-center gap-4 px-5 py-4 rounded-3xl hover:bg-white/10 {% if '/security/alerts/' in request.path %}bg-white/10{% endif %} transition-all">
+                    <i class="fa-solid fa-shield-halved w-5"></i>
+                    <span class="font-medium">Alertes</span>
+                </a>
+                {% endif %}
+                
+                <a href="/logout/" class="flex items-center gap-4 px-5 py-4 rounded-3xl hover:bg-red-500/10 text-red-400 mt-10">
+                    <i class="fa-solid fa-right-from-bracket w-5"></i>
+                    <span class="font-medium">Déconnexion</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- CONTENU -->
+        <div class="flex-1 ml-72 p-8">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <script>
+        function toggleTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('themeToggle');
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                localStorage.theme = 'light';
+                icon.innerHTML = '<i class="fa-solid fa-moon"></i>';
+            } else {
+                html.classList.add('dark');
+                localStorage.theme = 'dark';
+                icon.innerHTML = '<i class="fa-solid fa-sun"></i>';
+            }
+        }
+
+        function loadTheme() {
+            const icon = document.getElementById('themeToggle');
+            if (localStorage.theme === 'light') {
+                document.documentElement.classList.remove('dark');
+                icon.innerHTML = '<i class="fa-solid fa-moon"></i>';
+            } else {
+                document.documentElement.classList.add('dark');
+                icon.innerHTML = '<i class="fa-solid fa-sun"></i>';
+            }
+        }
+        window.onload = loadTheme;
+    </script>
+</body>
+</html>
+
+</html>

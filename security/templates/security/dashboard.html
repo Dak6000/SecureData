@@ -1,0 +1,284 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="max-w-screen-2xl mx-auto px-4">
+    <!-- En-tête Dynamique -->
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-10 gap-6">
+        <div>
+            <h1 class="text-4xl font-semibold">Tableau de bord Sécurité</h1>
+            <p class="opacity-60 mt-2">Analyse des menaces et réponse aux incidents en temps réel</p>
+        </div>
+        <div class="flex flex-wrap gap-4">
+            <a href="{% url 'export_alerts_csv' %}" 
+               class="flex items-center gap-3 px-6 py-3 bg-emerald-600 text-white rounded-3xl hover:bg-emerald-700 transition shadow-lg shadow-emerald-500/20">
+                <i class="fa-solid fa-file-csv"></i>
+                <span class="font-medium">Exporter CSV</span>
+            </a>
+            <a href="{% url 'download_logs' %}" 
+               class="flex items-center gap-3 px-6 py-3 bg-violet-600 text-white rounded-3xl hover:bg-violet-700 transition shadow-lg shadow-violet-500/20">
+                <i class="fa-solid fa-download"></i>
+                <span class="font-medium">Logs Brut</span>
+            </a>
+            <button onclick="location.reload()" 
+                    class="flex items-center gap-3 px-6 py-3 glass rounded-3xl transition">
+                <i class="fa-solid fa-rotate"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div class="glass rounded-3xl p-6 border border-white/5 bg-violet-500/5">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs uppercase font-bold opacity-40">Événements totaux</p>
+                    <p class="text-4xl font-semibold mt-2">{{ stats.total_events|default:0 }}</p>
+                </div>
+                <div class="text-5xl opacity-20">📊</div>
+            </div>
+        </div>
+
+        <div class="glass rounded-3xl p-6 border border-red-500/30 bg-red-500/5">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs uppercase font-bold text-red-400">Alertes Critiques</p>
+                    <p class="text-4xl font-semibold mt-2 text-red-500">{{ stats.critical|default:0 }}</p>
+                </div>
+                <div class="text-5xl opacity-20">🚨</div>
+            </div>
+        </div>
+
+        <div class="glass rounded-3xl p-6 border border-amber-500/30 bg-amber-500/5">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs uppercase font-bold text-amber-400">Alertes Élevées</p>
+                    <p class="text-4xl font-semibold mt-2 text-amber-500">{{ stats.high|default:0 }}</p>
+                </div>
+                <div class="text-5xl opacity-20">⚠️</div>
+            </div>
+        </div>
+
+        <div class="glass rounded-3xl p-6 border border-emerald-500/30 bg-emerald-500/5">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs uppercase font-bold text-emerald-400">Détection</p>
+                    <p class="text-4xl font-semibold mt-2 text-emerald-500">{{ stats.detection_rate|default:"100" }}%</p>
+                </div>
+                <div class="text-5xl opacity-20">🛡️</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres Avancés -->
+    <form method="GET" class="glass p-6 rounded-3xl mb-10 flex flex-wrap items-end gap-6 border-violet-500/10">
+        <div class="flex-1 min-w-[200px]">
+            <label class="text-[10px] uppercase font-bold opacity-40 mb-2 block">Filtrer par Sévérité</label>
+            <select name="severity" class="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-2 text-sm focus:outline-none focus:border-violet-500">
+                <option value="" {% if not current_severity %}selected{% endif %}>Toutes les sévérités</option>
+                <option value="critical" {% if current_severity == 'critical' %}selected{% endif %}>Critique</option>
+                <option value="high" {% if current_severity == 'high' %}selected{% endif %}>Élevée</option>
+                <option value="medium" {% if current_severity == 'medium' %}selected{% endif %}>Moyenne</option>
+            </select>
+        </div>
+        <div class="flex-1 min-w-[200px]">
+            <label class="text-[10px] uppercase font-bold opacity-40 mb-2 block">Depuis le (Date)</label>
+            <input type="date" name="from" value="{{ request.GET.from|default:'' }}" 
+                   class="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-2 text-sm focus:outline-none focus:border-violet-500">
+        </div>
+        <button type="submit" class="bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-8 py-2 rounded-2xl font-bold hover:shadow-lg hover:shadow-violet-500/30 transition">
+            Lancer Recherche
+        </button>
+        <a href="{% url 'security_dashboard' %}" class="opacity-40 hover:opacity-100 transition text-sm py-2">Tout effacer</a>
+    </form>
+
+    <!-- Résultats de Recherche (Scrollable) -->
+    <div class="mb-12">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-bold flex items-center gap-3">
+                <i class="fa-solid fa-magnifying-glass-chart text-violet-500"></i> Résultats de la recherche (Derniers 50)
+            </h2>
+            <span class="text-xs opacity-40 italic">Scrollable via la zone ci-dessous</span>
+        </div>
+        <div class="glass rounded-3xl overflow-hidden border border-violet-500/10 shadow-inner">
+            <div class="max-h-[450px] overflow-y-auto custom-scrollbar p-6">
+                <!-- Sous-section Alertes filtrées -->
+                <div class="mb-8">
+                    <h3 class="text-xs uppercase font-black tracking-widest opacity-20 mb-4">Alertes Correspondantes</h3>
+                    <div class="space-y-3">
+                        {% for alert in alerts %}
+                        <div class="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-white/20 transition">
+                            <div class="flex items-center gap-4">
+                                <span class="text-xl">{% if alert.alert_level == 'critical' %}🚨{% elif alert.alert_level == 'high' %}⚠️{% else %}🔴{% endif %}</span>
+                                <div>
+                                    <p class="text-sm font-medium">{{ alert.message }}</p>
+                                    <p class="text-[9px] opacity-40 italic">{{ alert.timestamp|date:"d/m H:i" }}</p>
+                                </div>
+                            </div>
+                            <span class="px-3 py-1 bg-white/10 rounded-full text-[9px] font-bold uppercase">{{ alert.alert_level }}</span>
+                        </div>
+                        {% empty %}
+                        <p class="text-center py-6 text-sm opacity-20 italic">Aucune alerte pour ce filtre</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Sous-section Evénements bruts filtrés -->
+                <div>
+                    <h3 class="text-xs uppercase font-black tracking-widest opacity-20 mb-4 text-emerald-500/40">Événements Détectés</h3>
+                    <div class="space-y-2">
+                        {% for event in events %}
+                        <div class="p-3 rounded-xl bg-violet-600/5 border border-white/5 flex justify-between items-center group">
+                            <div class="text-xs flex items-center gap-3">
+                                <span class="opacity-30 font-mono text-[10px]">{{ event.timestamp|date:"H:i:s" }}</span>
+                                <span class="font-bold text-violet-400">{{ event.username }}</span>
+                                <span class="opacity-60">{{ event.event_type }}</span>
+                            </div>
+                            <span class="text-[9px] opacity-0 group-hover:opacity-40 transition">{{ event.ip_address }}</span>
+                        </div>
+                        {% empty %}
+                        <p class="text-center py-6 text-sm opacity-20 italic">Aucun événement correspondant</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graphiques de Tendance (Après les résultats) -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+        <div class="lg:col-span-2 glass rounded-3xl p-8 border border-white/5">
+            <h3 class="text-xl font-medium mb-6 italic">Évolution Temporelle</h3>
+            <div style="height: 300px;">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+        <div class="glass rounded-3xl p-8 border border-white/5">
+            <h3 class="text-xl font-medium mb-6 italic">Top 5 IPs Cibles</h3>
+            <div class="space-y-4">
+                {% for ip in stats.top_ips %}
+                <div class="flex justify-between items-center p-4 rounded-2xl bg-white/5 border border-white/5">
+                    <span class="font-mono text-sm opacity-80">{{ ip.ip_address }}</span>
+                    <span class="px-3 py-1 bg-violet-500/20 text-violet-400 rounded-full text-xs font-bold">{{ ip.count }} évts</span>
+                </div>
+                {% empty %}
+                <p class="text-center py-10 opacity-40">Aucune donnée</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Alertes à Résoudre (Archives / Gestion) -->
+    <div class="glass rounded-3xl p-8 mb-12 border-violet-500/20 shadow-xl">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-2xl font-semibold flex items-center gap-3">
+                <i class="fa-solid fa-bell-concierge"></i> File d'Incidents
+            </h2>
+        </div>
+        
+        <div class="space-y-4">
+            {% for alert in alerts %}
+            {% if not alert.resolved %}
+            <div class="p-6 rounded-3xl bg-white/5 border border-white/5 hover:border-violet-500/30 transition group shadow-sm">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div class="flex items-center gap-5">
+                        <span class="text-4xl filter drop-shadow-lg">
+                            {% if alert.alert_level == 'critical' %}🚨{% elif alert.alert_level == 'high' %}⚠️{% else %}🔴{% endif %}
+                        </span>
+                        <div>
+                            <div class="flex items-center gap-3 mb-1">
+                                <span class="px-3 py-0.5 rounded-full text-[10px] font-bold uppercase
+                                    {% if alert.alert_level == 'critical' %}bg-red-500 text-white
+                                    {% elif alert.alert_level == 'high' %}bg-amber-500 text-white
+                                    {% else %}bg-yellow-500 text-black{% endif %}">
+                                    {{ alert.alert_level }}
+                                </span>
+                                <span class="text-xs opacity-40">{{ alert.timestamp|date:"d/m à H:i" }}</span>
+                            </div>
+                            <p class="font-medium text-lg">{{ alert.message }}</p>
+                        </div>
+                    </div>
+                    <a href="{% url 'resolve_alert' alert.id %}" 
+                       class="px-8 py-3 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white border border-emerald-500/30 rounded-2xl text-sm font-bold transition">
+                        Résoudre
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Events Table -->
+    <div class="glass rounded-3xl p-8">
+        <h2 class="text-2xl font-semibold mb-8">Flux d'événements brut</h2>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="text-left text-[10px] uppercase tracking-widest opacity-40 border-b border-white/10">
+                        <th class="py-4">Timestamp</th>
+                        <th class="py-4">Utilisateur / IP</th>
+                        <th class="py-4">Action</th>
+                        <th class="py-4">Sévérité</th>
+                        <th class="py-4">Description</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    {% for event in events %}
+                    <tr class="hover:bg-white/5 transition">
+                        <td class="py-5 font-mono text-xs">{{ event.timestamp|date:"H:i:s" }}</td>
+                        <td class="py-5">
+                            <div class="font-bold">{{ event.username|default:"Anonyme" }}</div>
+                            <div class="text-[10px] opacity-40">{{ event.ip_address }}</div>
+                        </td>
+                        <td class="py-5 text-sm font-medium">{{ event.event_type }}</td>
+                        <td class="py-5">
+                            <span class="text-[10px] font-black uppercase tracking-tighter
+                                {% if event.severity == 'critical' %}text-red-500{% elif event.severity == 'high' %}text-amber-500{% else %}text-emerald-500{% endif %}">
+                                ● {{ event.severity }}
+                            </span>
+                        </td>
+                        <td class="py-5 text-sm opacity-60">{{ event.description }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const isDayMode = document.documentElement.classList.contains('dark');
+        const chartColor = isDayMode ? '#8b5cf6' : '#8b5cf6';
+        const gridColor = isDayMode ? 'rgba(248, 247, 247, 0.05)' : 'rgba(11, 198, 250, 0.67)';
+
+        const ctx = document.getElementById('trendChart').getContext('2d');
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(139, 92, 246, 0.4)');
+        gradient.addColorStop(1, 'rgba(250, 250, 251, 0)');
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [{% for t in stats.alert_trends %}'{{ t.day }}',{% endfor %}],
+                datasets: [{
+                    label: 'Fréquence des Alertes',
+                    data: [{% for t in stats.alert_trends %}{{ t.count }},{% endfor %}],
+                    borderColor: '#8b5cf6',
+                    background: gradient,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { grid: { color: gridColor }, ticks: { color: chartColor } },
+                    x: { grid: { display: false }, ticks: { color: chartColor } }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

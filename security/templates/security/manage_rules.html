@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+        <div>
+            <h1 class="text-4xl font-bold tracking-tight mb-2">Gestion des Règles</h1>
+            <p class="opacity-60 text-lg italic">SIEM - Contrôle des protocoles de détection</p>
+        </div>
+        <div class="flex flex-wrap gap-4">
+            <!-- Total -->
+            <div class="glass px-6 py-3 rounded-2xl flex items-center gap-3 border border-violet-500/30">
+                <i class="fa-solid fa-list-check text-violet-400"></i>
+                <div class="flex flex-col">
+                    <span class="text-[10px] uppercase opacity-40 font-bold">Total</span>
+                    <span class="text-sm font-bold">{{ stats.total }} Règles</span>
+                </div>
+            </div>
+            <!-- Actives -->
+            <div class="glass px-6 py-3 rounded-2xl flex items-center gap-3 border border-emerald-500/30">
+                <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                <div class="flex flex-col">
+                    <span class="text-[10px] uppercase opacity-40 font-bold">Actives</span>
+                    <span class="text-sm font-bold text-emerald-400">{{ stats.active }}</span>
+                </div>
+            </div>
+            <!-- Inactives -->
+            <div class="glass px-6 py-3 rounded-2xl flex items-center gap-3 border border-red-500/30 text-red-100">
+                <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+                <div class="flex flex-col">
+                    <span class="text-[10px] uppercase opacity-40 font-bold">Inactives</span>
+                    <span class="text-sm font-bold text-red-400">{{ stats.inactive }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rule Cards Container -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {% for rule in rules %}
+        <div class="glass rounded-3xl p-8 transition-all duration-300 hover:scale-[1.01] hover:shadow-2xl hover:shadow-white/5 border-l-4 {% if rule.is_active %}border-emerald-500{% else %}border-red-500{% endif %}">
+            <div class="flex justify-between items-start mb-6">
+                <div class="p-4 bg-white/5 rounded-2xl">
+                    {% if rule.code == 'sql_injection' %}
+                        <i class="fa-solid fa-code text-2xl text-violet-400"></i>
+                    {% elif rule.code == 'enumeration' %}
+                        <i class="fa-solid fa-users-viewfinder text-2xl text-blue-400"></i>
+                    {% elif rule.code == 'mass_access' %}
+                        <i class="fa-solid fa-database text-2xl text-emerald-400"></i>
+                    {% elif rule.code == 'off_hours' %}
+                        <i class="fa-solid fa-clock text-2xl text-amber-400"></i>
+                    {% else %}
+                        <i class="fa-solid fa-shield-halved text-2xl text-red-400"></i>
+                    {% endif %}
+                </div>
+                
+                <!-- Toggle Switch -->
+                <a href="{% url 'toggle_rule' rule.id %}" class="relative inline-flex items-center cursor-pointer group">
+                    <div class="w-14 h-7 bg-white/10 rounded-full transition-all duration-300 group-hover:bg-white/20 {% if rule.is_active %}bg-emerald-500/20{% endif %}"></div>
+                    <div class="absolute left-1 w-5 h-5 bg-white rounded-full transition-all duration-300 transform {% if rule.is_active %}translate-x-7 bg-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.5)]{% else %}bg-white/40{% endif %}"></div>
+                </a>
+            </div>
+
+            <h3 class="text-xl font-bold mb-3">{{ rule.name }}</h3>
+            <p class="opacity-50 text-sm leading-relaxed mb-6">{{ rule.description }}</p>
+            
+            <!-- Parameters Form -->
+            {% if rule.parameters %}
+            <form action="{% url 'update_rule_params' rule.id %}" method="POST" class="space-y-4 mb-6">
+                {% csrf_token %}
+                <div class="grid grid-cols-2 gap-4">
+                    {% if rule.code == 'transaction_limit' %}
+                        <div class="col-span-2">
+                            <label class="text-[10px] uppercase opacity-40 font-bold mb-1 block">Seuil (FCFA)</label>
+                            <input type="number" name="threshold" value="{{ rule.parameters.threshold }}" 
+                                   class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-violet-500">
+                        </div>
+                    {% elif rule.code == 'off_hours' %}
+                        <div>
+                            <label class="text-[10px] uppercase opacity-40 font-bold mb-1 block">Début (H)</label>
+                            <input type="number" min="0" max="23" name="start" value="{{ rule.parameters.start }}" 
+                                   class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-violet-500">
+                        </div>
+                        <div>
+                            <label class="text-[10px] uppercase opacity-40 font-bold mb-1 block">Fin (H)</label>
+                            <input type="number" min="0" max="23" name="end" value="{{ rule.parameters.end }}" 
+                                   class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-violet-500">
+                        </div>
+                    {% elif rule.code == 'mass_access' %}
+                        <div class="col-span-2">
+                            <label class="text-[10px] uppercase opacity-40 font-bold mb-1 block">Limite (req/min)</label>
+                            <input type="number" name="limit" value="{{ rule.parameters.limit }}" 
+                                   class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-violet-500">
+                        </div>
+                    {% elif rule.code == 'repeated_reading' %}
+                        <div>
+                            <label class="text-[10px] uppercase opacity-40 font-bold mb-1 block">Limite (fois)</label>
+                            <input type="number" name="limit" value="{{ rule.parameters.limit }}" 
+                                   class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-violet-500">
+                        </div>
+                        <div>
+                            <label class="text-[10px] uppercase opacity-40 font-bold mb-1 block">Fenêtre (sec)</label>
+                            <input type="number" name="window" value="{{ rule.parameters.window }}" 
+                                   class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-violet-500">
+                        </div>
+                    {% elif rule.code == 'global_rate_limit' %}
+                        <div class="col-span-2">
+                            <label class="text-[10px] uppercase opacity-40 font-bold mb-1 block">Seuil Global (req/min)</label>
+                            <input type="number" name="threshold" value="{{ rule.parameters.threshold }}" 
+                                   class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-violet-500">
+                        </div>
+                    {% endif %}
+                </div>
+                <button type="submit" class="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-bold uppercase tracking-widest transition">
+                    Mettre à jour
+                </button>
+            </form>
+            {% endif %}
+
+            <div class="flex items-center justify-between pt-6 border-t border-white/5">
+                <span class="text-[10px] uppercase tracking-widest opacity-40 font-bold">Identifiant: {{ rule.code }}</span>
+                {% if rule.is_active %}
+                <span class="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold uppercase rounded-full">Actif</span>
+                {% else %}
+                <span class="px-3 py-1 bg-red-500/10 text-red-400 text-[10px] font-bold uppercase rounded-full">Désactivé</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Info Box -->
+    <div class="mt-12 p-8 glass rounded-3xl border border-violet-500/20 bg-violet-500/5">
+        <div class="flex gap-4 items-start">
+            <i class="fa-solid fa-circle-info text-2xl text-violet-400"></i>
+            <div>
+                <h4 class="font-bold text-lg mb-2">Note sur la mise en cache</h4>
+                <p class="opacity-60 text-sm">Les changements de statut des règles sont appliqués avec un délai maximum de 30 secondes pour optimiser les performances du middleware. En cas de test immédiat, l'invalidation du cache est tentée automatiquement.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

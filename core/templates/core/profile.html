@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="max-w-4xl mx-auto px-4">
+    <!-- En-tête Profil -->
+    <div class="flex items-center gap-8 mb-12">
+        <div class="w-24 h-24 bg-violet-600 rounded-3xl flex items-center justify-center text-5xl shadow-xl shadow-violet-500/20 text-white">
+            {{ user.username|first|upper }}
+        </div>
+        <div>
+            <h1 class="text-4xl font-bold tracking-tight">{{ user.username }}</h1>
+            <p class="opacity-60 text-lg">Rôle : <span class="font-bold uppercase text-violet-500">{{ user.role }}</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <div class="glass p-6 rounded-3xl border border-emerald-500/20">
+            <p class="text-[10px] uppercase font-bold opacity-40 mb-1">Statut du Compte</p>
+            <p class="text-xl font-bold flex items-center gap-2">
+                <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> ACTIF
+            </p>
+        </div>
+        <div class="glass p-6 rounded-3xl border border-violet-500/20">
+            <p class="text-[10px] uppercase font-bold opacity-40 mb-1">Dernière Connexion</p>
+            <p class="text-xl font-bold">{{ user.last_login|date:"d/m/Y"|default:"Première fois" }}</p>
+        </div>
+        <div class="glass p-6 rounded-3xl border border-white/5">
+            <p class="text-[10px] uppercase font-bold opacity-40 mb-1">Historique Sécurité</p>
+            <p class="text-xl font-bold">{{ events|length }} Évènements</p>
+        </div>
+    </div>
+
+    <!-- Historique Personnel -->
+    <div class="glass rounded-3xl p-8 border border-white/5">
+        <h2 class="text-2xl font-semibold mb-8 flex items-center gap-3">
+            <i class="fa-solid fa-shield-halved text-violet-400"></i>
+            Votre Historique de Sécurité Personnel
+        </h2>
+        
+        <div class="space-y-4">
+            {% for event in events %}
+            <div class="flex justify-between items-center p-5 rounded-2xl bg-white/5 border border-white/5 hover:border-violet-500/30 transition">
+                <div class="flex items-center gap-4">
+                    <span class="text-2xl opacity-40">
+                        {% if event.severity == 'critical' %}🚨{% elif event.severity == 'high' %}⚠️{% else %}🛡️{% endif %}
+                    </span>
+                    <div>
+                        <p class="font-medium">{{ event.description }}</p>
+                        <p class="text-[10px] uppercase tracking-widest opacity-40">
+                            {{ event.event_type }} • {{ event.timestamp|date:"d/m/Y à H:i" }}
+                        </p>
+                    </div>
+                </div>
+                <span class="px-4 py-1 rounded-full text-[10px] font-bold uppercase
+                    {% if event.severity == 'critical' %}bg-red-500/10 text-red-400
+                    {% elif event.severity == 'high' %}bg-amber-500/10 text-amber-400
+                    {% else %}bg-emerald-500/10 text-emerald-400{% endif %}">
+                    {{ event.severity }}
+                </span>
+            </div>
+            {% empty %}
+            <p class="text-center py-20 opacity-40 italic">Aucune activité enregistrée.</p>
+            {% endfor %}
+        </div>
+        
+        <div class="mt-10 p-6 rounded-2xl bg-violet-600/5 border border-violet-500/10 flex gap-4 items-center">
+            <i class="fa-solid fa-circle-question text-violet-400"></i>
+            <p class="text-xs opacity-60">Cet historique affiche toutes les actions de sécurité enregistrées associées à votre nom d'utilisateur. Pour toute anomalie, contactez votre administrateur.</p>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

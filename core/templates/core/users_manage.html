@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="max-w-screen-2xl mx-auto">
+    <!-- En-tête -->
+    <div class="flex justify-between items-end mb-10">
+        <div>
+            <h1 class="text-4xl font-semibold text-slate-900 dark:text-white text-italic">Gestion des Utilisateurs</h1>
+            <p class="text-slate-600 dark:text-slate-400 mt-2">Gérez les accès, les rôles et la sécurité des comptes du SIEM</p>
+        </div>
+        <div class="flex gap-4">
+            <a href="/admin/core/customuser/add/" class="px-6 py-3 bg-violet-600 text-white rounded-3xl hover:bg-violet-700 transition flex items-center gap-3 shadow-lg shadow-violet-500/20">
+                <i class="fa-solid fa-user-plus"></i>
+                Nouvel Utilisateur
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtres & Infos -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        <div class="glass p-6 rounded-3xl border border-white/5">
+            <p class="text-xs text-slate-500 uppercase tracking-widest font-bold">Total Utilisateurs</p>
+            <p class="text-3xl font-semibold mt-2">{{ stats.total }}</p>
+        </div>
+        <div class="glass p-6 rounded-3xl border border-amber-500/20">
+            <p class="text-xs text-amber-500 uppercase tracking-widest font-bold">Comptes Verrouillés</p>
+            <p class="text-3xl font-semibold mt-2 text-amber-500">{{ stats.locked }}</p>
+        </div>
+        <div class="glass p-6 rounded-3xl border border-emerald-500/20">
+            <p class="text-xs text-emerald-500 uppercase tracking-widest font-bold">Administrateurs</p>
+            <p class="text-3xl font-semibold mt-2 text-emerald-500">{{ stats.admins }}</p>
+        </div>
+    </div>
+
+    <!-- Table des Utilisateurs -->
+    <div class="glass rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
+        <table class="w-full text-left">
+            <thead>
+                <tr class="bg-white/5 text-xs font-bold uppercase tracking-widest text-slate-400 border-b border-white/10">
+                    <th class="px-8 py-6">Utilisateur</th>
+                    <th class="px-8 py-6">Rôle Actuel</th>
+                    <th class="px-8 py-6">Statut</th>
+                    <th class="px-8 py-6 text-center">Actions Sécurité</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+                {% for u in users %}
+                <tr class="hover:bg-white/5 transition group">
+                    <td class="px-8 py-6">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-2xl from-slate-700 to-slate-900 flex items-center justify-center font-bold text-white shadow-inner">
+                                {{ u.username|slice:":1"|upper }}
+                            </div>
+                            <div>
+                                <p class="font-medium text-slate-900 dark:text-white">{{ u.username }}</p>
+                                <p class="text-xs text-slate-500 italic">Inscrit le {{ u.date_joined|date:"d/m/Y" }}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-8 py-6">
+                        <form action="{% url 'change_user_role' u.id %}" method="POST" class="flex items-center gap-2">
+                            {% csrf_token %}
+                            <select name="role" onchange="this.form.submit()" 
+                                    class="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-violet-500 {% if u.is_superuser %}cursor-not-allowed opacity-50{% endif %}"
+                                    {% if u.is_superuser %}disabled{% endif %}>
+                                <option value="utilisateur" {% if u.role == 'utilisateur' %}selected{% endif %}>Utilisateur</option>
+                                <option value="analyste" {% if u.role == 'analyste' %}selected{% endif %}>Analyste</option>
+                                <option value="admin" {% if u.role == 'admin' %}selected{% endif %}>Admin</option>
+                            </select>
+                        </form>
+                    </td>
+                    <td class="px-8 py-6">
+                        {% if u.is_locked %}
+                        <span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/20 text-red-500 text-xs font-bold">
+                            <i class="fa-solid fa-lock text-[10px]"></i> VERROUILLÉ
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/20 text-emerald-500 text-xs font-bold">
+                            <i class="fa-solid fa-lock-open text-[10px]"></i> ACTIF
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-8 py-6">
+                        <div class="flex justify-center gap-3">
+                            {% if not u.is_superuser %}
+                            <a href="{% url 'toggle_user_lock' u.id %}" 
+                               title="{% if u.is_locked %}Déverrouiller{% else %}Verrouiller{% endif %}"
+                               class="w-10 h-10 flex items-center justify-center rounded-2xl transition shadow-lg
+                               {% if u.is_locked %}bg-emerald-600/20 text-emerald-500 hover:bg-emerald-600 hover:text-white
+                               {% else %}bg-red-600/20 text-red-500 hover:bg-red-600 hover:text-white{% endif %}">
+                                <i class="fa-solid {% if u.is_locked %}fa-unlock{% else %}fa-user-slash{% endif %}"></i>
+                            </a>
+                            <a href="/admin/core/customuser/{{ u.id }}/change/" target="_blank"
+                               class="w-10 h-10 flex items-center justify-center rounded-2xl bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white transition shadow-lg"
+                               title="Édition Complète">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </a>
+                            {% else %}
+                            <span class="text-xs text-slate-500 italic">Compte Protégé</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

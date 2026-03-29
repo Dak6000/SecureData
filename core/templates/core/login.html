@@ -1,0 +1,116 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - SecureData</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+        
+        :root {
+            /* THÈME NUIT (DÉFAUT) : NOIR & ARGENT */
+            --bg-color: #000000;
+            --text-color: #C0C0C0;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --border-color: rgba(192, 192, 192, 0.2);
+        }
+
+        .dark {
+            /* THÈME JOUR : ARGENT/BLEU CLAIR & NOIR */
+            --bg-color: #e5eef6ff;
+            --text-color: #0f172a;
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --border-color: rgba(15, 23, 42, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center">
+
+    <div class="w-full max-w-md mx-4">
+        <div class="glass rounded-3xl shadow-2xl p-10">
+            <div class="text-center mb-10">
+                <div class="mx-auto w-16 h-16 bg-violet-600 rounded-2xl flex items-center justify-center text-4xl mb-6 shadow-lg shadow-violet-500/20 text-white">🔒</div>
+                <h1 class="text-4xl font-semibold tracking-tight text-[var(--text-color)]">SecureData</h1>
+                <p class="opacity-60 mt-2 italic">SIEM - Accès Sécurisé</p>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="mb-6 text-center p-4 rounded-2xl bg-red-500/10 text-red-400 border border-red-500/20 text-sm">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                <input type="text" name="email_verify" style="display:none" tabindex="-1" autocomplete="off">
+                <div>
+                    <input type="text" name="username" placeholder="Nom d'utilisateur" required
+                           class="w-full bg-white/5 border border-[var(--border-color)] rounded-2xl px-6 py-4 text-[var(--text-color)] placeholder:opacity-40 focus:outline-none focus:border-violet-500 transition">
+                </div>
+
+                <div>
+                    <input type="password" name="password" placeholder="Mot de passe" required
+                           class="w-full bg-white/5 border border-[var(--border-color)] rounded-2xl px-6 py-4 text-[var(--text-color)] placeholder:opacity-40 focus:outline-none focus:border-violet-500 transition">
+                </div>
+
+                <button type="submit"
+                        class="w-full bg-violet-600 text-white font-bold py-4 rounded-2xl text-lg hover:bg-violet-700 transition shadow-lg shadow-violet-500/20">
+                    Se connecter
+                </button>
+            </form>
+
+            <p class="text-center mt-8 opacity-60 text-sm">
+                Pas encore de compte ? 
+                <a href="/register/" class="text-violet-400 font-semibold hover:underline">Inscrivez-vous</a>
+            </p>
+
+            <p class="text-center opacity-40 text-[10px] mt-10 uppercase tracking-widest">
+                Kara SIEM Project – FAST-LPSIC
+            </p>
+        </div>
+    </div>
+
+    <!-- Theme Toggle -->
+    <button onclick="toggleTheme()" 
+            class="fixed bottom-8 right-8 text-2xl glass rounded-2xl p-4 hover:scale-110 transition cursor-pointer" id="themeToggle">
+        <i class="fa-solid fa-sun"></i>
+    </button>
+
+    <script>
+        function toggleTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('themeToggle');
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                localStorage.theme = 'light';
+                icon.innerHTML = '<i class="fa-solid fa-moon"></i>';
+            } else {
+                html.classList.add('dark');
+                localStorage.theme = 'dark';
+                icon.innerHTML = '<i class="fa-solid fa-sun"></i>';
+            }
+        }
+
+        if (localStorage.theme === 'light') {
+            document.documentElement.classList.remove('dark');
+            document.getElementById('themeToggle').innerHTML = '<i class="fa-solid fa-moon"></i>';
+        }
+    </script>
+</body>
+</html>

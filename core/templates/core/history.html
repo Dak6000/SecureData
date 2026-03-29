@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+        <div>
+            <h1 class="text-4xl font-bold tracking-tight mb-2">Historique des Transactions</h1>
+            <p class="opacity-60 text-lg italic">
+                {% if user.role == 'admin' %}
+                    Consultez l'ensemble des mouvements financiers de la plateforme.
+                {% else %}
+                    Suivi complet de vos mouvements de capital.
+                {% endif %}
+            </p>
+        </div>
+        <div class="flex gap-4">
+            <div class="glass px-6 py-3 rounded-2xl flex items-center gap-3">
+                <i class="fa-solid fa-receipt text-violet-400"></i>
+                <span class="text-sm font-semibold uppercase tracking-widest">{{ transactions.count }} Opérations</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transactions List -->
+    <div class="glass rounded-3xl overflow-hidden border border-white/5">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-white/5 text-[10px] uppercase tracking-[0.2em] font-bold opacity-60">
+                        <th class="px-8 py-5">Date & Heure</th>
+                        <th class="px-8 py-5">Type</th>
+                        <th class="px-8 py-5">Description</th>
+                        <th class="px-8 py-5">Source / Dest.</th>
+                        <th class="px-8 py-5 text-right">Montant</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    {% for tx in transactions %}
+                    <tr class="hover:bg-white/[0.02] transition-colors group">
+                        <td class="px-8 py-6">
+                            <div class="flex flex-col">
+                                <span class="font-bold text-sm">{{ tx.timestamp|date:"d M Y" }}</span>
+                                <span class="text-[10px] opacity-40 uppercase">{{ tx.timestamp|date:"H:i" }}</span>
+                            </div>
+                        </td>
+                        <td class="px-8 py-6">
+                            {% if tx.transaction_type == 'transfert' %}
+                                <span class="px-3 py-1 bg-blue-500/10 text-blue-400 text-[10px] font-bold uppercase rounded-full border border-blue-500/20">Virement</span>
+                            {% else %}
+                                <span class="px-3 py-1 bg-amber-500/10 text-amber-400 text-[10px] font-bold uppercase rounded-full border border-amber-500/20">Ajustement</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-8 py-6">
+                            <p class="text-sm opacity-70 group-hover:opacity-100 transition-opacity">{{ tx.description }}</p>
+                        </td>
+                        <td class="px-8 py-6">
+                            <div class="flex items-center gap-3">
+                                <div class="flex flex-col">
+                                    {% if tx.sender_acc %}
+                                        <span class="text-xs font-bold opacity-80">{{ tx.sender_acc.id_compte }}</span>
+                                    {% else %}
+                                        <span class="text-xs font-bold text-violet-400">EXTERNE (ADMIN)</span>
+                                    {% endif %}
+                                    <i class="fa-solid fa-arrow-right text-[10px] opacity-20 my-1"></i>
+                                    <span class="text-xs font-bold opacity-80">{{ tx.receiver_acc.id_compte }}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-8 py-6 text-right">
+                            {% if user.role == 'admin' %}
+                                <span class="text-lg font-mono font-bold">{{ tx.amount }} FCFA</span>
+                            {% else %}
+                                <!-- Logique de couleur pour l'utilisateur -->
+                                {% if tx.sender_acc and tx.sender_acc.owner == user %}
+                                    <span class="text-lg font-mono font-bold text-red-400">-{{ tx.amount }} FCFA</span>
+                                {% elif tx.receiver_acc and tx.receiver_acc.owner == user %}
+                                    <span class="text-lg font-mono font-bold text-emerald-400">+{{ tx.amount }} FCFA</span>
+                                {% else %}
+                                    <span class="text-lg font-mono font-bold">{{ tx.amount }} FCFA</span>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-8 py-20 text-center">
+                            <div class="flex flex-col items-center gap-4 opacity-30">
+                                <i class="fa-solid fa-box-open text-5xl"></i>
+                                <p class="text-xl font-medium">Aucune transaction enregistrée</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Security Note -->
+    <div class="mt-12 p-8 glass rounded-3xl border border-emerald-500/20 bg-emerald-500/5">
+        <div class="flex gap-4 items-start">
+            <i class="fa-solid fa-shield-check text-2xl text-emerald-400"></i>
+            <div>
+                <h4 class="font-bold text-lg mb-2">Audit de Sécurité SIEM</h4>
+                <p class="opacity-60 text-sm">Cet historique est immuable et audité en temps réel par le système de surveillance. Toute transaction suspecte dépassant les seuils définis génère automatiquement une alerte critique pour les analystes.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
