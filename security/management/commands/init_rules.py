@@ -65,7 +65,40 @@ class Command(BaseCommand):
                 'description': 'Alerte critique lors d\'une tentative de modification de compte par un utilisateur simple.',
                 'is_active': True
             },
+            {
+                'name': 'Manipulation d\'URL / Patterns Suspects',
+                'code': 'suspicious_url',
+                'description': 'Détecte les patterns de traversée de répertoire (../) et accès aux fichiers sensibles (.env, .git).',
+                'is_active': True
+            },
+            {
+                'name': 'Caractères Suspects (XSS)',
+                'code': 'suspicious_chars',
+                'description': 'Analyse les paramètres pour détecter des tags HTML/Scripts suspects (<script>, alert).',
+                'is_active': True
+            },
+            {
+                'name': 'Détection Scan Web (404)',
+                'code': 'web_scan_404',
+                'description': 'Surveille les erreurs 404 répétées pour détecter les robots de scan.',
+                'is_active': True,
+                'parameters': {'limit': 10}
+            },
+            {
+                'name': 'Journalisation Connexion Réussie',
+                'code': 'login_success',
+                'description': 'Journalise chaque connexion réussie (Gravité Faible).',
+                'is_active': True
+            },
+            {
+                'name': 'Détection Login Multiple / IP',
+                'code': 'multiple_user_login',
+                'description': 'Alerte si plus de 3 utilisateurs différents se connectent depuis la même adresse IP en 10 minutes.',
+                'is_active': True,
+                'parameters': {'limit': 3}
+            },
         ]
+
 
         for r in rules:
             rule, created = SecurityRule.objects.get_or_create(

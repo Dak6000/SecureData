@@ -9,7 +9,7 @@
             <p class="text-slate-600 dark:text-slate-400 mt-2">Gérez les accès, les rôles et la sécurité des comptes du SIEM</p>
         </div>
         <div class="flex gap-4">
-            <a href="/admin/core/customuser/add/" class="px-6 py-3 bg-violet-600 text-white rounded-3xl hover:bg-violet-700 transition flex items-center gap-3 shadow-lg shadow-violet-500/20">
+            <a href="{% url 'user_create' %}" class="px-6 py-3 bg-violet-600 text-white rounded-3xl hover:bg-violet-700 transition flex items-center gap-3 shadow-lg shadow-violet-500/20">
                 <i class="fa-solid fa-user-plus"></i>
                 Nouvel Utilisateur
             </a>
@@ -81,8 +81,18 @@
                         {% endif %}
                     </td>
                     <td class="px-8 py-6">
-                        <div class="flex justify-center gap-3">
+                        <div class="flex justify-center gap-3 text-white">
                             {% if not u.is_superuser %}
+                            <a href="{% url 'user_detail' u.id %}" 
+                               class="w-10 h-10 flex items-center justify-center rounded-2xl bg-white/5 text-violet-400 hover:bg-violet-600 hover:text-white transition shadow-lg"
+                               title="Voir la fiche détaillée">
+                                <i class="fa-solid fa-eye"></i>
+                            </a>
+                            <a href="{% url 'user_edit' u.id %}"
+                               class="w-10 h-10 flex items-center justify-center rounded-2xl bg-amber-600/20 text-amber-500 hover:bg-amber-600 hover:text-white transition shadow-lg"
+                               title="Édition Rapide">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </a>
                             <a href="{% url 'toggle_user_lock' u.id %}" 
                                title="{% if u.is_locked %}Déverrouiller{% else %}Verrouiller{% endif %}"
                                class="w-10 h-10 flex items-center justify-center rounded-2xl transition shadow-lg
@@ -90,13 +100,14 @@
                                {% else %}bg-red-600/20 text-red-500 hover:bg-red-600 hover:text-white{% endif %}">
                                 <i class="fa-solid {% if u.is_locked %}fa-unlock{% else %}fa-user-slash{% endif %}"></i>
                             </a>
-                            <a href="/admin/core/customuser/{{ u.id }}/change/" target="_blank"
-                               class="w-10 h-10 flex items-center justify-center rounded-2xl bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white transition shadow-lg"
-                               title="Édition Complète">
-                                <i class="fa-solid fa-pen-to-square"></i>
-                            </a>
+
                             {% else %}
-                            <span class="text-xs text-slate-500 italic">Compte Protégé</span>
+                            <a href="{% url 'user_detail' u.id %}" 
+                               class="w-10 h-10 flex items-center justify-center rounded-2xl bg-white/5 text-violet-400 hover:bg-violet-600 hover:text-white transition shadow-lg"
+                               title="Voir la fiche détaillée">
+                                <i class="fa-solid fa-eye"></i>
+                            </a>
+                            <span class="text-xs text-slate-500 italic ml-4">Compte Protégé</span>
                             {% endif %}
                         </div>
                     </td>

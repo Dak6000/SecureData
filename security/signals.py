@@ -1,5 +1,5 @@
 from django.dispatch import Signal, receiver
-from django.contrib.auth.signals import user_login_failed
+from django.contrib.auth.signals import user_login_failed, user_logged_in
 from django.core.cache import cache
 from django.utils import timezone
 from core.models import SecurityEvent, Alert
@@ -45,6 +45,12 @@ transaction_threshold_exceeded = Signal()
 abnormal_navigation_speed = Signal()
 repeated_account_consultation = Signal()
 unauthorized_modification = Signal()
+login_success = Signal()
+multiple_login_detected = Signal()
+web_scan_detected = Signal()
+suspicious_url_detected = Signal()
+suspicious_chars_detected = Signal()
+account_locked_attempt = Signal()
 
 # ====================== HANDLERS (RÈGLES DU SUJET) ======================
 
@@ -58,30 +64,71 @@ def handle_failed_login(sender, credentials, request, **kwargs):
     attempts = cache.get(key, 0) + 1
     cache.set(key, attempts, 120)
 
-    severity = 'medium' if attempts >= 3 else 'low'
+    # Détection utilisateur inexistant ou verrouillé
+    from core.models import CustomUser
+    user_info = "inconnu"
+    is_existent = False
+    is_locked_account = False
+    
+    try:
+        user_obj = CustomUser.objects.get(username=username)
+        is_existent = True
+        if user_obj.is_locked:
+            is_locked_account = True
+            user_info = f"{username} (DÉJÀ VERROUILLÉ)"
+        else:
+            user_info = username
+    except CustomUser.DoesNotExist:
+        user_info = f"{username} (INEXISTANT)"
+
+    severity = 'medium' if (attempts >= 3 or not is_existent or is_locked_account) else 'low'
+    
+    event_type = 'login_failed'
+    if is_locked_account:
+        event_type = 'locked_account_attempt'
+        description = f"Tentative de connexion sur compte déjà verrouillé : {username}"
+    elif not is_existent:
+        event_type = 'non_existent_user'
+        description = f"Tentative avec utilisateur inexistant : {username}"
+    else:
+        description = f"Échec de connexion pour {username} (tentative {attempts})"
+
     event = SecurityEvent.objects.create(
         username=username,
         ip_address=ip,
-        event_type='login_failed',
+        event_type=event_type,
         severity=severity,
-        description=f'Échec de connexion (tentative {attempts})'
+        description=description
     )
+
+    # Création systématique de l'alerte pour assurer la visibilité sur le dashboard
+    Alert.objects.create(
+        alert_level=severity,
+        source_event=event,
+        message=description
+    )
+
     if attempts >= 3:
-        Alert.objects.create(alert_level='medium', source_event=event,
-                           message=f'3 échecs de connexion en < 2 min - IP {ip}')
-    log_to_file('login_failed', username, ip, severity, event.description)
-    check_and_blacklist(ip, "Échecs de connexion répétés")
+        # Verrouillage du compte utilisateur s'il existe et n'est pas admin
+        if is_existent and not user_obj.is_superuser and user_obj.role != 'admin':
+            user_obj.is_locked = True
+            user_obj.save()
+            event.action_taken = "Compte verrouillé"
+            event.save()
+
+    log_to_file(event_type, username, ip, severity, event.description)
+    check_and_blacklist(ip, "Échecs de connexion répétés ou suspects")
 
 
 @receiver(sql_injection_detected)
 def handle_sql_injection(sender, username, ip, payload, **kwargs):
     event = SecurityEvent.objects.create(
         username=username, ip_address=ip, event_type='sql_injection',
-        severity='high', description=f'Tentative SQLi : {payload[:80]}'
+        severity='critical', description=f'Tentative SQLi : {payload[:80]}'
     )
-    Alert.objects.create(alert_level='high', source_event=event,
+    Alert.objects.create(alert_level='critical', source_event=event,
                        message='Injection SQL détectée et bloquée')
-    log_to_file('sql_injection', username, ip, 'high', event.description)
+    log_to_file('sql_injection', username, ip, 'critical', event.description)
     check_and_blacklist(ip, "Tentative d'injection SQL")
 
 
@@ -101,11 +148,11 @@ def handle_mass_access(sender, username, ip, count, **kwargs):
 def handle_access_denied(sender, username, ip, requested_url, **kwargs):
     event = SecurityEvent.objects.create(
         username=username, ip_address=ip, event_type='access_denied',
-        severity='high', description=f'Accès interdit à {requested_url}'
+        severity='critical', description=f'Accès interdit à {requested_url}'
     )
-    Alert.objects.create(alert_level='high', source_event=event,
+    Alert.objects.create(alert_level='critical', source_event=event,
                        message=f'Tentative d’accès à une ressource interdite ({requested_url})')
-    log_to_file('access_denied', username, ip, 'high', event.description)
+    log_to_file('access_denied', username, ip, 'critical', event.description)
 
 
 @receiver(enumeration_attempt)
@@ -144,11 +191,11 @@ def handle_transaction_threshold(sender, username, amount, threshold, ip, **kwar
 def handle_privilege_escalation(sender, username, ip, **kwargs):
     event = SecurityEvent.objects.create(
         username=username, ip_address=ip, event_type='privilege_escalation',
-        severity='high', description='Tentative d’élévation de privilèges'
+        severity='critical', description='Tentative d’élévation de privilèges'
     )
-    Alert.objects.create(alert_level='high', source_event=event,
+    Alert.objects.create(alert_level='critical', source_event=event,
                        message='Tentative d’élévation de privilèges détectée')
-    log_to_file('privilege_escalation', username, ip, 'high', event.description)
+    log_to_file('privilege_escalation', username, ip, 'critical', event.description)
 
 
 @receiver(repeated_sensitive_access)
@@ -165,11 +212,11 @@ def handle_repeated_access(sender, username, ip, **kwargs):
 def handle_navigation_speed(sender, username, ip, count, **kwargs):
     event = SecurityEvent.objects.create(
         username=username, ip_address=ip, event_type='abnormal_navigation_speed',
-        severity='high', description=f'Vitesse de navigation suspecte ({count} req/min)'
+        severity='critical', description=f'Vitesse de navigation suspecte ({count} req/min)'
     )
-    Alert.objects.create(alert_level='high', source_event=event,
+    Alert.objects.create(alert_level='critical', source_event=event,
                        message=f'Navigation trop rapide ({count} req/min) - Suspection de bot')
-    log_to_file('abnormal_navigation_speed', username, ip, 'high', event.description)
+    log_to_file('abnormal_navigation_speed', username, ip, 'critical', event.description)
 
 @receiver(repeated_account_consultation)
 def handle_repeated_account(sender, username, ip, account_id, **kwargs):
@@ -191,3 +238,87 @@ def handle_unauthorized_mod(sender, username, ip, target_account, **kwargs):
                        message='Tentative de modification de capital par un non-admin bloquée')
     log_to_file('unauthorized_modification', username, ip, 'critical', event.description)
     check_and_blacklist(ip, "Tentative de modification illégale de capital")
+
+from django.contrib.auth.signals import user_login_failed, user_logged_in, user_logged_out
+
+@receiver(user_logged_in)
+def handle_login_success(sender, request, user, **kwargs):
+    ip = request.META.get('REMOTE_ADDR')
+    
+    # Règle : Détection de logins multiples
+    key_ip = f"logins_from_ip_{ip}"
+    users_from_ip = cache.get(key_ip, set())
+    users_from_ip.add(user.username)
+    cache.set(key_ip, users_from_ip, 600) # 10 minutes
+
+    if len(users_from_ip) > 3:
+        multiple_login_detected.send(sender=None, ip=ip, usernames=list(users_from_ip))
+
+    event = SecurityEvent.objects.create(
+        username=user.username, ip_address=ip, event_type='login_success',
+        severity='low', description=f"Connexion réussie : {user.username}"
+    )
+    # Créer une alerte de faible priorité pour la visibilité sur le dashboard
+    Alert.objects.create(
+        alert_level='low',
+        source_event=event,
+        message=f"Session ouverte pour l'utilisateur {user.username}"
+    )
+    log_to_file('login_success', user.username, ip, 'low', event.description)
+
+@receiver(user_logged_out)
+def handle_logout(sender, request, user, **kwargs):
+    if user:
+        ip = request.META.get('REMOTE_ADDR')
+        event = SecurityEvent.objects.create(
+            username=user.username, ip_address=ip, event_type='logout',
+            severity='low', description=f"Déconnexion de l'utilisateur : {user.username}"
+        )
+        # Créer une alerte de faible priorité pour la visibilité sur le dashboard
+        Alert.objects.create(
+            alert_level='low',
+            source_event=event,
+            message=f"Session fermée pour l'utilisateur {user.username}"
+        )
+        log_to_file('logout', user.username, ip, 'low', event.description)
+
+@receiver(multiple_login_detected)
+def handle_multiple_login(sender, ip, usernames, **kwargs):
+    event = SecurityEvent.objects.create(
+        username='multi-user', ip_address=ip, event_type='multiple_login',
+        severity='medium', description=f"Connexion de {len(usernames)} comptes via cette IP : {', '.join(usernames)}"
+    )
+    Alert.objects.create(alert_level='medium', source_event=event,
+                       message=f"IP partagée par {len(usernames)} comptes - Suspection de bot/proxy")
+    log_to_file('multiple_login', 'multi-user', ip, 'medium', event.description)
+
+@receiver(web_scan_detected)
+def handle_web_scan(sender, ip, count, **kwargs):
+    event = SecurityEvent.objects.create(
+        username='anonymous', ip_address=ip, event_type='web_scan',
+        severity='high', description=f"Scan Web détecté ({count} erreurs 404/min)"
+    )
+    Alert.objects.create(alert_level='high', source_event=event,
+                       message=f"Scan de vulnérabilités suspecté depuis IP {ip}")
+    log_to_file('web_scan', 'anonymous', ip, 'high', event.description)
+    check_and_blacklist(ip, "Scan de fichiers détecté")
+
+@receiver(suspicious_url_detected)
+def handle_suspicious_url(sender, username, ip, url, **kwargs):
+    event = SecurityEvent.objects.create(
+        username=username, ip_address=ip, event_type='suspicious_url',
+        severity='critical', description=f"Manipulation d'URL détectée : {url}"
+    )
+    Alert.objects.create(alert_level='critical', source_event=event,
+                       message=f"Tentative de manipulation d'URL ({url})")
+    log_to_file('suspicious_url', username, ip, 'critical', event.description)
+
+@receiver(suspicious_chars_detected)
+def handle_suspicious_chars(sender, username, ip, payload, **kwargs):
+    event = SecurityEvent.objects.create(
+        username=username, ip_address=ip, event_type='suspicious_chars',
+        severity='critical', description=f"Caractères suspects / XSS détectés : {payload[:50]}"
+    )
+    Alert.objects.create(alert_level='critical', source_event=event,
+                       message="Tentative d'injection de scripts (XSS/Payload)")
+    log_to_file('suspicious_chars', username, ip, 'critical', event.description)

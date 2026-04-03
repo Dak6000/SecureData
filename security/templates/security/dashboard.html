@@ -5,8 +5,14 @@
     <!-- En-tête Dynamique -->
     <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-10 gap-6">
         <div>
-            <h1 class="text-4xl font-semibold">Tableau de bord Sécurité</h1>
+            <h1 class="text-4xl font-semibold bg-gradient-to-r from-violet-400 to-emerald-400 bg-clip-text text-transparent">
+                Tableau de bord Sécurité
+            </h1>
             <p class="opacity-60 mt-2">Analyse des menaces et réponse aux incidents en temps réel</p>
+            <div class="flex gap-2 mt-3">
+                <span class="text-xs px-3 py-1 bg-violet-500/20 rounded-full">Dernière mise à jour: {% now "d/m/Y H:i:s" %}</span>
+                <span class="text-xs px-3 py-1 bg-emerald-500/20 rounded-full">Flux actif</span>
+            </div>
         </div>
         <div class="flex flex-wrap gap-4">
             <a href="{% url 'export_alerts_csv' %}" 
@@ -20,50 +26,66 @@
                 <span class="font-medium">Logs Brut</span>
             </a>
             <button onclick="location.reload()" 
-                    class="flex items-center gap-3 px-6 py-3 glass rounded-3xl transition">
+                    class="flex items-center gap-3 px-6 py-3 glass rounded-3xl transition hover:bg-white/10">
                 <i class="fa-solid fa-rotate"></i>
+                <span class="hidden md:inline">Rafraîchir</span>
             </button>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        <div class="glass rounded-3xl p-6 border border-white/5 bg-violet-500/5">
+    <!-- Cartes Statistiques améliorées -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
+        <div class="glass rounded-3xl p-6 border border-white/5 bg-gradient-to-br from-violet-500/10 to-transparent hover:scale-105 transition-transform duration-300">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-xs uppercase font-bold opacity-40">Événements totaux</p>
                     <p class="text-4xl font-semibold mt-2">{{ stats.total_events|default:0 }}</p>
+                    <p class="text-xs text-emerald-400 mt-1">
+                        <i class="fa-solid fa-arrow-up"></i> +{{ stats.total_trend|default:12 }}% vs mois dernier
+                    </p>
                 </div>
-                <div class="text-5xl opacity-20">📊</div>
+                <div class="text-5xl opacity-20"><i class="fa-solid fa-database"></i></div>
             </div>
         </div>
 
-        <div class="glass rounded-3xl p-6 border border-red-500/30 bg-red-500/5">
+        <div class="glass rounded-3xl p-6 border border-red-500/30 bg-gradient-to-br from-red-500/10 to-transparent hover:scale-105 transition-transform duration-300">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-xs uppercase font-bold text-red-400">Alertes Critiques</p>
                     <p class="text-4xl font-semibold mt-2 text-red-500">{{ stats.critical|default:0 }}</p>
+                    <p class="text-xs text-red-400 mt-1">{{ stats.critical_today|default:0 }} aujourd'hui</p>
                 </div>
-                <div class="text-5xl opacity-20">🚨</div>
+                <div class="text-5xl opacity-20"><i class="fa-solid fa-skull-crossbones"></i></div>
             </div>
         </div>
 
-        <div class="glass rounded-3xl p-6 border border-amber-500/30 bg-amber-500/5">
+        <div class="glass rounded-3xl p-6 border border-orange-500/30 bg-gradient-to-br from-orange-500/10 to-transparent hover:scale-105 transition-transform duration-300">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-xs uppercase font-bold text-amber-400">Alertes Élevées</p>
-                    <p class="text-4xl font-semibold mt-2 text-amber-500">{{ stats.high|default:0 }}</p>
+                    <p class="text-xs uppercase font-bold text-orange-400">Alertes Élevées</p>
+                    <p class="text-4xl font-semibold mt-2 text-orange-500">{{ stats.high|default:0 }}</p>
                 </div>
-                <div class="text-5xl opacity-20">⚠️</div>
+                <div class="text-5xl opacity-20"><i class="fa-solid fa-exclamation-triangle"></i></div>
             </div>
         </div>
 
-        <div class="glass rounded-3xl p-6 border border-emerald-500/30 bg-emerald-500/5">
+        <div class="glass rounded-3xl p-6 border border-yellow-500/30 bg-gradient-to-br from-yellow-500/10 to-transparent hover:scale-105 transition-transform duration-300">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-xs uppercase font-bold text-emerald-400">Détection</p>
-                    <p class="text-4xl font-semibold mt-2 text-emerald-500">{{ stats.detection_rate|default:"100" }}%</p>
+                    <p class="text-xs uppercase font-bold text-yellow-400">Alertes Moyennes</p>
+                    <p class="text-4xl font-semibold mt-2 text-yellow-500">{{ stats.medium|default:0 }}</p>
                 </div>
-                <div class="text-5xl opacity-20">🛡️</div>
+                <div class="text-5xl opacity-20"><i class="fa-solid fa-circle-exclamation"></i></div>
+            </div>
+        </div>
+
+        <div class="glass rounded-3xl p-6 border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-transparent hover:scale-105 transition-transform duration-300">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs uppercase font-bold text-emerald-400">Alertes Faibles</p>
+                    <p class="text-4xl font-semibold mt-2 text-emerald-500">{{ stats.low|default:0 }}</p>
+                </div>
+                <div class="text-5xl opacity-20"><i class="fa-solid fa-info-circle"></i></div>
             </div>
         </div>
     </div>
@@ -77,6 +99,16 @@
                 <option value="critical" {% if current_severity == 'critical' %}selected{% endif %}>Critique</option>
                 <option value="high" {% if current_severity == 'high' %}selected{% endif %}>Élevée</option>
                 <option value="medium" {% if current_severity == 'medium' %}selected{% endif %}>Moyenne</option>
+                <option value="low" {% if current_severity == 'low' %}selected{% endif %}>Faible</option>
+            </select>
+        </div>
+        <div class="flex-1 min-w-[200px]">
+            <label class="text-[10px] uppercase font-bold opacity-40 mb-2 block">Type d'événement</label>
+            <select name="event_type" class="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-2 text-sm focus:outline-none focus:border-violet-500">
+                <option value="">Tous les types</option>
+                {% for type in stats.event_types_list %}
+                <option value="{{ type.value }}" {% if current_event_type == type.value %}selected{% endif %}>{{ type.label }}</option>
+                {% endfor %}
             </select>
         </div>
         <div class="flex-1 min-w-[200px]">
@@ -84,201 +116,617 @@
             <input type="date" name="from" value="{{ request.GET.from|default:'' }}" 
                    class="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-2 text-sm focus:outline-none focus:border-violet-500">
         </div>
+        <div class="flex-1 min-w-[200px]">
+            <label class="text-[10px] uppercase font-bold opacity-40 mb-2 block">Jusqu'au (Date)</label>
+            <input type="date" name="to" value="{{ request.GET.to|default:'' }}" 
+                   class="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-2 text-sm focus:outline-none focus:border-violet-500">
+        </div>
         <button type="submit" class="bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-8 py-2 rounded-2xl font-bold hover:shadow-lg hover:shadow-violet-500/30 transition">
-            Lancer Recherche
+            <i class="fa-solid fa-magnifying-glass mr-2"></i>Rechercher
         </button>
-        <a href="{% url 'security_dashboard' %}" class="opacity-40 hover:opacity-100 transition text-sm py-2">Tout effacer</a>
+        <a href="{% url 'security_dashboard' %}" class="opacity-40 hover:opacity-100 transition text-sm py-2">
+            <i class="fa-solid fa-eraser"></i> Effacer
+        </a>
     </form>
-
-    <!-- Résultats de Recherche (Scrollable) -->
+    
+    <!-- Résultats de Recherche avec Statistiques -->
     <div class="mb-12">
         <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-bold flex items-center gap-3">
-                <i class="fa-solid fa-magnifying-glass-chart text-violet-500"></i> Résultats de la recherche (Derniers 50)
+            <h2 class="text-2xl font-bold flex items-center gap-3">
+                <i class="fa-solid fa-magnifying-glass-chart text-violet-500"></i> 
+                Résultats de la recherche
+                <span class="text-sm opacity-40">({{ events|length }} événements trouvés)</span>
             </h2>
-            <span class="text-xs opacity-40 italic">Scrollable via la zone ci-dessous</span>
+            <div class="flex gap-2">
+                <button onclick="exportFilteredResults()" class="text-xs px-3 py-1 rounded-full bg-emerald-500/20 hover:bg-emerald-500/40 transition">
+                    <i class="fa-solid fa-download"></i> Exporter
+                </button>
+            </div>
         </div>
-        <div class="glass rounded-3xl overflow-hidden border border-violet-500/10 shadow-inner">
-            <div class="max-h-[450px] overflow-y-auto custom-scrollbar p-6">
-                <!-- Sous-section Alertes filtrées -->
-                <div class="mb-8">
-                    <h3 class="text-xs uppercase font-black tracking-widest opacity-20 mb-4">Alertes Correspondantes</h3>
-                    <div class="space-y-3">
-                        {% for alert in alerts %}
-                        <div class="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-white/20 transition">
-                            <div class="flex items-center gap-4">
-                                <span class="text-xl">{% if alert.alert_level == 'critical' %}🚨{% elif alert.alert_level == 'high' %}⚠️{% else %}🔴{% endif %}</span>
-                                <div>
-                                    <p class="text-sm font-medium">{{ alert.message }}</p>
-                                    <p class="text-[9px] opacity-40 italic">{{ alert.timestamp|date:"d/m H:i" }}</p>
-                                </div>
-                            </div>
-                            <span class="px-3 py-1 bg-white/10 rounded-full text-[9px] font-bold uppercase">{{ alert.alert_level }}</span>
-                        </div>
-                        {% empty %}
-                        <p class="text-center py-6 text-sm opacity-20 italic">Aucune alerte pour ce filtre</p>
-                        {% endfor %}
-                    </div>
-                </div>
-
-                <!-- Sous-section Evénements bruts filtrés -->
-                <div>
-                    <h3 class="text-xs uppercase font-black tracking-widest opacity-20 mb-4 text-emerald-500/40">Événements Détectés</h3>
-                    <div class="space-y-2">
+        <div class="glass rounded-3xl overflow-hidden border border-violet-500/10">
+            <div class="max-h-[500px] overflow-y-auto custom-scrollbar">
+                <table class="w-full">
+                    <thead class="sticky top-0 bg-black/40 backdrop-blur-sm">
+                        <tr class="text-left text-[10px] uppercase tracking-widest opacity-60 border-b border-white/10">
+                            <th class="px-6 py-4">Timestamp</th>
+                            <th class="px-6 py-4">Utilisateur/IP</th>
+                            <th class="px-6 py-4">Type</th>
+                            <th class="px-6 py-4">Sévérité</th>
+                            <th class="px-6 py-4">Description</th>
+                            <th class="px-6 py-4">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5">
                         {% for event in events %}
-                        <div class="p-3 rounded-xl bg-violet-600/5 border border-white/5 flex justify-between items-center group">
-                            <div class="text-xs flex items-center gap-3">
-                                <span class="opacity-30 font-mono text-[10px]">{{ event.timestamp|date:"H:i:s" }}</span>
-                                <span class="font-bold text-violet-400">{{ event.username }}</span>
-                                <span class="opacity-60">{{ event.event_type }}</span>
-                            </div>
-                            <span class="text-[9px] opacity-0 group-hover:opacity-40 transition">{{ event.ip_address }}</span>
-                        </div>
+                        <tr class="hover:bg-white/5 transition group">
+                            <td class="px-6 py-4 font-mono text-xs opacity-60">{{ event.timestamp|date:"d/m/Y H:i:s" }}</td>
+                            <td class="px-6 py-4">
+                                <div class="font-medium text-sm">{{ event.username|default:"Anonyme" }}</div>
+                                <div class="text-[10px] opacity-40 font-mono">{{ event.ip_address }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="px-3 py-1 bg-violet-500/10 text-violet-400 rounded-full text-[10px] font-bold border border-violet-500/20">
+                                    {{ event.event_type }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="text-[10px] font-black uppercase 
+                                    {% if event.severity == 'critical' %}text-red-500
+                                    {% elif event.severity == 'high' %}text-orange-500
+                                    {% elif event.severity == 'medium' %}text-yellow-500
+                                    {% else %}text-emerald-500{% endif %}">
+                                    ● {{ event.severity|upper }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-sm opacity-60 max-w-xs truncate" title="{{ event.description }}">
+                                {{ event.description|truncatechars:60 }}
+                            </td>
+                            <td class="px-6 py-4">
+                                <button onclick="viewEventDetails({{ event.id }})" class="text-xs px-3 py-1 rounded-full bg-violet-500/20 hover:bg-violet-500/40 transition">
+                                    <i class="fa-solid fa-eye"></i> Détails
+                                </button>
+                            </td>
+                        </tr>
                         {% empty %}
-                        <p class="text-center py-6 text-sm opacity-20 italic">Aucun événement correspondant</p>
+                        <tr>
+                            <td colspan="6" class="text-center py-10 opacity-40 italic">
+                                <i class="fa-solid fa-inbox text-4xl mb-3 block"></i>
+                                Aucun événement correspondant aux critères de recherche
+                            </td>
+                        </tr>
                         {% endfor %}
-                    </div>
-                </div>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
-
-    <!-- Graphiques de Tendance (Après les résultats) -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-        <div class="lg:col-span-2 glass rounded-3xl p-8 border border-white/5">
-            <h3 class="text-xl font-medium mb-6 italic">Évolution Temporelle</h3>
+    <!-- Graphiques de Tendance (Première ligne) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+        <div class="glass rounded-3xl p-8 border border-white/5">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-medium italic">Évolution Temporelle des Alertes</h3>
+                <div class="flex gap-2">
+                    <button onclick="changeChartRange('7')" class="text-xs px-3 py-1 rounded-full bg-violet-500/20 hover:bg-violet-500/40 transition">7j</button>
+                    <button onclick="changeChartRange('30')" class="text-xs px-3 py-1 rounded-full bg-violet-500/20 hover:bg-violet-500/40 transition">30j</button>
+                    <button onclick="changeChartRange('90')" class="text-xs px-3 py-1 rounded-full bg-violet-500/20 hover:bg-violet-500/40 transition">90j</button>
+                </div>
+            </div>
             <div style="height: 300px;">
                 <canvas id="trendChart"></canvas>
             </div>
         </div>
+
         <div class="glass rounded-3xl p-8 border border-white/5">
-            <h3 class="text-xl font-medium mb-6 italic">Top 5 IPs Cibles</h3>
-            <div class="space-y-4">
-                {% for ip in stats.top_ips %}
-                <div class="flex justify-between items-center p-4 rounded-2xl bg-white/5 border border-white/5">
-                    <span class="font-mono text-sm opacity-80">{{ ip.ip_address }}</span>
-                    <span class="px-3 py-1 bg-violet-500/20 text-violet-400 rounded-full text-xs font-bold">{{ ip.count }} évts</span>
-                </div>
-                {% empty %}
-                <p class="text-center py-10 opacity-40">Aucune donnée</p>
-                {% endfor %}
+            <h3 class="text-xl font-medium italic mb-6">Distribution par Sévérité</h3>
+            <div style="height: 300px;">
+                <canvas id="severityPieChart"></canvas>
             </div>
         </div>
     </div>
 
-    <!-- Alertes à Résoudre (Archives / Gestion) -->
+    <!-- Deuxième ligne de graphiques -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+        <div class="glass rounded-3xl p-8 border border-white/5">
+            <h3 class="text-xl font-medium italic mb-6">Top 10 IPs Sources</h3>
+            <div class="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar">
+                {% for ip in stats.top_ips %}
+                <div class="flex justify-between items-center p-3 rounded-2xl bg-white/5 border border-white/5 hover:border-violet-500/30 transition">
+                    <div>
+                        <span class="font-mono text-sm">{{ ip.ip_address }}</span>
+                        <span class="text-xs opacity-40 ml-2">{{ ip.location|default:"Location inconnue" }}</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-20 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-violet-500 to-emerald-500 rounded-full" style="width: {{ ip.percentage }}%"></div>
+                        </div>
+                        <span class="px-3 py-1 bg-violet-500/20 text-violet-400 rounded-full text-xs font-bold">{{ ip.count }} évts</span>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-center py-10 opacity-40">Aucune donnée IP disponible</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="glass rounded-3xl p-8 border border-white/5">
+            <h3 class="text-xl font-medium italic mb-6">Top Types d'Événements</h3>
+            <div style="height: 300px;">
+                <canvas id="eventTypeChart"></canvas>
+            </div>
+        </div>
+
+        <div class="glass rounded-3xl p-8 border border-white/5">
+            <h3 class="text-xl font-medium italic mb-6">Activité par Heure (24h)</h3>
+            <div style="height: 300px;">
+                <canvas id="hourlyChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    
+
+    <!-- Alertes à Résoudre -->
     <div class="glass rounded-3xl p-8 mb-12 border-violet-500/20 shadow-xl">
-        <div class="flex justify-between items-center mb-8">
+        <div class="flex justify-between items-center mb-8 flex-wrap gap-4">
             <h2 class="text-2xl font-semibold flex items-center gap-3">
-                <i class="fa-solid fa-bell-concierge"></i> File d'Incidents
+                <i class="fa-solid fa-bell-concierge text-violet-400"></i> 
+                File d'Incidents Actifs
+                <span class="text-sm bg-red-500/20 px-3 py-1 rounded-full">{{ stats.active_alerts_count }} à traiter</span>
             </h2>
+            <div class="flex gap-3">
+                <a href="{% url 'alerts_list' %}" class="text-xs font-bold uppercase tracking-widest text-violet-400 hover:text-white transition">
+                    Voir toutes les alertes <i class="fa-solid fa-chevron-right ml-2"></i>
+                </a>
+                <form action="{% url 'resolve_all_alerts' %}" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="text-xs px-3 py-1 rounded-full bg-emerald-500/20 hover:bg-emerald-500/40 transition">
+                        <i class="fa-solid fa-check-double"></i> Tout résoudre
+                    </button>
+                </form>
+            </div>
         </div>
         
-        <div class="space-y-4">
+        <div class="space-y-4 max-h-[600px] overflow-y-auto custom-scrollbar">
             {% for alert in alerts %}
             {% if not alert.resolved %}
-            <div class="p-6 rounded-3xl bg-white/5 border border-white/5 hover:border-violet-500/30 transition group shadow-sm">
+            <div class="p-6 rounded-3xl bg-gradient-to-r from-white/5 to-transparent border border-white/10 hover:border-violet-500/30 transition group shadow-sm">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div class="flex items-center gap-5">
-                        <span class="text-4xl filter drop-shadow-lg">
-                            {% if alert.alert_level == 'critical' %}🚨{% elif alert.alert_level == 'high' %}⚠️{% else %}🔴{% endif %}
-                        </span>
-                        <div>
-                            <div class="flex items-center gap-3 mb-1">
-                                <span class="px-3 py-0.5 rounded-full text-[10px] font-bold uppercase
+                    <div class="flex items-center gap-5 flex-1">
+                        <div class="text-4xl">
+                            {% if alert.alert_level == 'critical' %}
+                                <i class="fa-solid fa-skull-crossbones text-red-500 animate-pulse"></i>
+                            {% elif alert.alert_level == 'high' %}
+                                <i class="fa-solid fa-exclamation-triangle text-orange-500"></i>
+                            {% else %}
+                                <i class="fa-solid fa-circle-exclamation text-yellow-500"></i>
+                            {% endif %}
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-center gap-3 mb-2 flex-wrap">
+                                <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase
                                     {% if alert.alert_level == 'critical' %}bg-red-500 text-white
-                                    {% elif alert.alert_level == 'high' %}bg-amber-500 text-white
+                                    {% elif alert.alert_level == 'high' %}bg-orange-500 text-white
                                     {% else %}bg-yellow-500 text-black{% endif %}">
-                                    {{ alert.alert_level }}
+                                    {{ alert.alert_level|upper }}
                                 </span>
-                                <span class="text-xs opacity-40">{{ alert.timestamp|date:"d/m à H:i" }}</span>
+                                <span class="text-xs opacity-40">
+                                    <i class="fa-regular fa-clock"></i> {{ alert.timestamp|date:"d/m/Y à H:i" }}
+                                </span>
+                                <span class="text-xs opacity-40">
+                                    <i class="fa-solid fa-location-dot"></i> {{ alert.source_ip|default:"Source inconnue" }}
+                                </span>
                             </div>
                             <p class="font-medium text-lg">{{ alert.message }}</p>
+                            <p class="text-xs opacity-50 mt-1">{{ alert.description|truncatechars:100 }}</p>
                         </div>
                     </div>
-                    <a href="{% url 'resolve_alert' alert.id %}" 
-                       class="px-8 py-3 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white border border-emerald-500/30 rounded-2xl text-sm font-bold transition">
-                        Résoudre
-                    </a>
+                    <div class="flex gap-2">
+                        <a href="{% url 'resolve_alert' alert.id %}" 
+                           class="px-6 py-2 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-600 hover:text-white border border-emerald-500/30 rounded-xl text-sm font-bold transition transform hover:scale-105">
+                            <i class="fa-solid fa-check"></i> Résoudre
+                        </a>
+                        <button onclick="viewAlertDetails({{ alert.id }})" 
+                                class="px-6 py-2 bg-violet-500/10 text-violet-400 hover:bg-violet-600/30 border border-violet-500/30 rounded-xl text-sm font-bold transition">
+                            <i class="fa-solid fa-info-circle"></i> Détails
+                        </button>
+                    </div>
                 </div>
             </div>
             {% endif %}
+            {% empty %}
+            <div class="text-center py-16 opacity-40 italic">
+                <i class="fa-solid fa-check-circle text-5xl mb-4 text-emerald-500"></i>
+                <p class="text-lg">Aucun incident actif à traiter.</p>
+                <p class="text-sm">Tous les systèmes sont opérationnels</p>
+            </div>
             {% endfor %}
         </div>
     </div>
 
-    <!-- Events Table -->
-    <div class="glass rounded-3xl p-8">
-        <h2 class="text-2xl font-semibold mb-8">Flux d'événements brut</h2>
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead>
-                    <tr class="text-left text-[10px] uppercase tracking-widest opacity-40 border-b border-white/10">
-                        <th class="py-4">Timestamp</th>
-                        <th class="py-4">Utilisateur / IP</th>
-                        <th class="py-4">Action</th>
-                        <th class="py-4">Sévérité</th>
-                        <th class="py-4">Description</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-white/5">
-                    {% for event in events %}
-                    <tr class="hover:bg-white/5 transition">
-                        <td class="py-5 font-mono text-xs">{{ event.timestamp|date:"H:i:s" }}</td>
-                        <td class="py-5">
-                            <div class="font-bold">{{ event.username|default:"Anonyme" }}</div>
-                            <div class="text-[10px] opacity-40">{{ event.ip_address }}</div>
-                        </td>
-                        <td class="py-5 text-sm font-medium">{{ event.event_type }}</td>
-                        <td class="py-5">
-                            <span class="text-[10px] font-black uppercase tracking-tighter
-                                {% if event.severity == 'critical' %}text-red-500{% elif event.severity == 'high' %}text-amber-500{% else %}text-emerald-500{% endif %}">
-                                ● {{ event.severity }}
-                            </span>
-                        </td>
-                        <td class="py-5 text-sm opacity-60">{{ event.description }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <!-- Flux SIEM Temps Réel -->
+    <div class="glass rounded-3xl p-8 mb-20 border border-white/5">
+        <div class="flex justify-between items-center mb-8 flex-wrap gap-4">
+            <h2 class="text-2xl font-semibold flex items-center gap-3">
+                <i class="fa-solid fa-microchip text-emerald-400"></i> 
+                Flux SIEM Temps Réel
+            </h2>
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <span class="flex h-3 w-3 relative">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                    </span>
+                    <span class="text-[10px] font-bold opacity-40 uppercase tracking-widest">Live</span>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="toggleAutoScroll()" class="text-xs px-3 py-1 rounded-full bg-violet-500/20 hover:bg-violet-500/40 transition" id="autoScrollBtn">
+                        <i class="fa-solid fa-arrow-down"></i> Auto-scroll ON
+                    </button>
+                    <button onclick="clearLiveFeed()" class="text-xs px-3 py-1 rounded-full bg-red-500/20 hover:bg-red-500/40 transition">
+                        <i class="fa-solid fa-trash"></i> Effacer
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="overflow-hidden rounded-2xl border border-white/5" id="liveFeedContainer">
+            <div class="overflow-x-auto max-h-[500px] overflow-y-auto custom-scrollbar" id="liveFeed">
+                <table class="w-full">
+                    <thead class="sticky top-0 bg-black/60 backdrop-blur-sm">
+                        <tr class="text-left text-[10px] uppercase tracking-widest opacity-60 border-b border-white/10">
+                            <th class="px-6 py-4">Timestamp</th>
+                            <th class="px-6 py-4">Utilisateur</th>
+                            <th class="px-6 py-4">IP</th>
+                            <th class="px-6 py-4">Type</th>
+                            <th class="px-6 py-4">Sévérité</th>
+                            <th class="px-6 py-4">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5" id="liveFeedBody">
+                        {% for event in events|slice:":50" %}
+                        <tr class="hover:bg-white/5 transition live-row" data-timestamp="{{ event.timestamp|date:'U' }}">
+                            <td class="px-6 py-4 font-mono text-xs opacity-60">{{ event.timestamp|date:"H:i:s" }}</td>
+                            <td class="px-6 py-4 font-medium text-sm">{{ event.username|default:"Anonyme" }}</td>
+                            <td class="px-6 py-4 font-mono text-xs opacity-60">{{ event.ip_address }}</td>
+                            <td class="px-6 py-4">
+                                <span class="px-3 py-1 bg-violet-500/10 text-violet-400 rounded-full text-[10px] font-bold">
+                                    {{ event.event_type }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="text-[10px] font-black uppercase 
+                                    {% if event.severity == 'critical' %}text-red-500
+                                    {% elif event.severity == 'high' %}text-orange-500
+                                    {% elif event.severity == 'medium' %}text-yellow-500
+                                    {% else %}text-emerald-500{% endif %}">
+                                    ● {{ event.severity|upper }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-sm opacity-60 max-w-md truncate">{{ event.description|truncatechars:80 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-10 opacity-40 italic">En attente des événements en temps réel...</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="mt-4 text-center">
+            <small class="opacity-40" id="liveStats">
+                <i class="fa-regular fa-eye"></i> {{ events|length }} événements affichés | 
+                Dernière mise à jour: {% now "H:i:s" %}
+            </small>
         </div>
     </div>
 </div>
 
+<style>
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.05);
+    border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(139,92,246,0.5);
+    border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(139,92,246,0.8);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.live-row {
+    animation: fadeIn 0.3s ease;
+}
+.hover\:scale-105:hover {
+    transform: scale(1.05);
+}
+.transition {
+    transition: all 0.3s ease;
+}
+</style>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const isDayMode = document.documentElement.classList.contains('dark');
-        const chartColor = isDayMode ? '#8b5cf6' : '#8b5cf6';
-        const gridColor = isDayMode ? 'rgba(248, 247, 247, 0.05)' : 'rgba(11, 198, 250, 0.67)';
+// Variables globales
+let trendChart, severityPieChart, eventTypeChart, hourlyChart;
+let autoScrollEnabled = true;
+let lastEventTimestamp = {{ events.0.timestamp|date:'U'|default:0 }};
+let pollingInterval = null;
 
-        const ctx = document.getElementById('trendChart').getContext('2d');
-        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-        gradient.addColorStop(0, 'rgba(139, 92, 246, 0.4)');
-        gradient.addColorStop(1, 'rgba(250, 250, 251, 0)');
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCharts();
+    startLivePolling();
+});
 
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: [{% for t in stats.alert_trends %}'{{ t.day }}',{% endfor %}],
-                datasets: [{
-                    label: 'Fréquence des Alertes',
-                    data: [{% for t in stats.alert_trends %}{{ t.count }},{% endfor %}],
-                    borderColor: '#8b5cf6',
-                    background: gradient,
-                    fill: true,
-                    tension: 0.4
-                }]
-            },
-            options: {
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { grid: { color: gridColor }, ticks: { color: chartColor } },
-                    x: { grid: { display: false }, ticks: { color: chartColor } }
-                }
+function initializeCharts() {
+    const isDark = document.documentElement.classList.contains('dark');
+    const textColor = '#c4b5fd';
+    const gridColor = 'rgba(139, 92, 246, 0.1)';
+
+    // Trend Chart
+    const trendCtx = document.getElementById('trendChart').getContext('2d');
+    const gradient = trendCtx.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(139, 92, 246, 0.4)');
+    gradient.addColorStop(1, 'rgba(139, 92, 246, 0)');
+    
+    trendChart = new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: [{% for t in stats.alert_trends %}'{{ t.day }}',{% endfor %}],
+            datasets: [{
+                label: 'Alertes',
+                data: [{% for t in stats.alert_trends %}{{ t.count }},{% endfor %}],
+                borderColor: '#8b5cf6',
+                backgroundColor: gradient,
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#c084fc',
+                pointBorderColor: '#8b5cf6',
+                pointRadius: 4,
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+            scales: {
+                y: { grid: { color: gridColor }, ticks: { color: textColor }, beginAtZero: true },
+                x: { grid: { display: false }, ticks: { color: textColor } }
             }
-        });
+        }
     });
+
+    // Severity Pie Chart
+    const pieCtx = document.getElementById('severityPieChart').getContext('2d');
+    severityPieChart = new Chart(pieCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Critique', 'Élevée', 'Moyenne', 'Faible'],
+            datasets: [{
+                data: [{{ stats.critical|default:0 }}, {{ stats.high|default:0 }}, {{ stats.medium|default:0 }}, {{ stats.low|default:0 }}],
+                backgroundColor: ['#ef4444', '#f97316', '#eab308', '#22c55e'],
+                borderWidth: 0,
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '65%',
+            plugins: {
+                legend: { position: 'bottom', labels: { color: textColor, font: { size: 11 } } },
+                tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw} alertes` } }
+            }
+        }
+    });
+
+    // Event Type Chart
+    const eventCtx = document.getElementById('eventTypeChart').getContext('2d');
+    eventTypeChart = new Chart(eventCtx, {
+        type: 'bar',
+        data: {
+            labels: [{% for type in stats.event_type_distribution %}'{{ type.name }}',{% endfor %}],
+            datasets: [{
+                label: 'Occurrences',
+                data: [{% for type in stats.event_type_distribution %}{{ type.count }},{% endfor %}],
+                backgroundColor: '#8b5cf6',
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { color: gridColor }, ticks: { color: textColor } },
+                y: { grid: { display: false }, ticks: { color: textColor } }
+            }
+        }
+    });
+
+    // Hourly Activity Chart
+    const hourlyCtx = document.getElementById('hourlyChart').getContext('2d');
+    hourlyChart = new Chart(hourlyCtx, {
+        type: 'bar',
+        data: {
+            labels: [{% for hour in stats.hourly_activity %}'{{ hour.hour }}h',{% endfor %}],
+            datasets: [{
+                label: 'Activité',
+                data: [{% for hour in stats.hourly_activity %}{{ hour.count }},{% endfor %}],
+                backgroundColor: '#a78bfa',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { display: false }, ticks: { color: textColor } },
+                y: { grid: { color: gridColor }, ticks: { color: textColor }, beginAtZero: true }
+            }
+        }
+    });
+}
+
+function changeChartRange(days) {
+    window.location.href = `?range=${days}`;
+}
+
+function startLivePolling() {
+    if (pollingInterval) clearInterval(pollingInterval);
+    pollingInterval = setInterval(pollNewEvents, 8000);
+}
+
+async function pollNewEvents() {
+    try {
+        const response = await fetch("{% url 'api_live_events' %}?since=" + lastEventTimestamp);
+        const data = await response.json();
+        
+        if (data.events && data.events.length > 0) {
+            data.events.forEach(event => addLiveEvent(event));
+            lastEventTimestamp = data.latest_timestamp;
+            updateLiveStats();
+        }
+    } catch (error) {
+        console.log('Polling error:', error);
+    }
+}
+
+function addLiveEvent(event) {
+    const tbody = document.getElementById('liveFeedBody');
+    const row = document.createElement('tr');
+    row.className = 'hover:bg-white/5 transition live-row';
+    
+    const severityClass = event.severity === 'critical' ? 'text-red-500' : 
+                         (event.severity === 'high' ? 'text-orange-500' :
+                         (event.severity === 'medium' ? 'text-yellow-500' : 'text-emerald-500'));
+    
+    row.innerHTML = `
+        <td class="px-6 py-4 font-mono text-xs opacity-60">${event.time}</td>
+        <td class="px-6 py-4 font-medium text-sm">${event.username || 'Anonyme'}</td>
+        <td class="px-6 py-4 font-mono text-xs opacity-60">${event.ip_address}</td>
+        <td class="px-6 py-4"><span class="px-3 py-1 bg-violet-500/10 text-violet-400 rounded-full text-[10px] font-bold">${event.event_type}</span></td>
+        <td class="px-6 py-4"><span class="text-[10px] font-black uppercase ${severityClass}">● ${event.severity.toUpperCase()}</span></td>
+        <td class="px-6 py-4 text-sm opacity-60">${event.description || '—'}</td>
+    `;
+    
+    tbody.insertBefore(row, tbody.firstChild);
+    
+    // Limiter à 100 événements
+    while (tbody.children.length > 100) {
+        tbody.removeChild(tbody.lastChild);
+    }
+    
+    if (autoScrollEnabled) {
+        const container = document.getElementById('liveFeed');
+        container.scrollTop = 0;
+    }
+    
+    // Notification pour événements critiques
+    if (event.severity === 'critical') {
+        showNotification('Alerte Critique', event.description);
+    }
+}
+
+function toggleAutoScroll() {
+    autoScrollEnabled = !autoScrollEnabled;
+    const btn = document.getElementById('autoScrollBtn');
+    btn.innerHTML = autoScrollEnabled ? '<i class="fa-solid fa-arrow-down"></i> Auto-scroll ON' : '<i class="fa-solid fa-arrow-down"></i> Auto-scroll OFF';
+}
+
+function clearLiveFeed() {
+    if (confirm('Effacer tous les événements du flux live ?')) {
+        document.getElementById('liveFeedBody').innerHTML = '';
+        lastEventTimestamp = Date.now() / 1000;
+    }
+}
+
+function updateLiveStats() {
+    const count = document.getElementById('liveFeedBody').children.length;
+    const now = new Date();
+    document.getElementById('liveStats').innerHTML = `
+        <i class="fa-regular fa-eye"></i> ${count} événements affichés | 
+        Dernière mise à jour: ${now.toLocaleTimeString()}
+    `;
+}
+
+function exportFilteredResults() {
+    const form = document.querySelector('form');
+    const params = new URLSearchParams(new FormData(form));
+    window.location.href = "{% url 'export_filtered_results' %}?" + params.toString();
+}
+
+function viewEventDetails(eventId) {
+    // Vue détaillée non implémentée, redirection vers le tableau de bord
+    window.location.href = "{% url 'security_dashboard' %}";
+}
+
+function viewAlertDetails(alertId) {
+    window.location.href = "{% url 'alerts_list' %}";
+}
+
+function resolveAllAlerts() {
+    if (confirm('Marquer toutes les alertes actives comme résolues ?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = "{% url 'resolve_all_alerts' %}";
+        const csrf = document.createElement('input');
+        csrf.type = 'hidden';
+        csrf.name = 'csrfmiddlewaretoken';
+        csrf.value = getCookie('csrftoken');
+        form.appendChild(csrf);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function showNotification(title, message) {
+    if (Notification.permission === 'granted') {
+        new Notification(title, { body: message, icon: '/static/alert-icon.png' });
+    } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission();
+    }
+    
+    // Afficher un toast
+    const toast = document.createElement('div');
+    toast.className = 'fixed bottom-4 right-4 bg-red-500 text-white px-6 py-3 rounded-2xl shadow-lg z-50 animate-fadeIn';
+    toast.innerHTML = `<i class="fa-solid fa-bell mr-2"></i> ${title}: ${message.substring(0, 50)}`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 5000);
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Demander la permission pour les notifications
+if (Notification.permission === 'default') {
+    Notification.requestPermission();
+}
 </script>
 {% endblock %}

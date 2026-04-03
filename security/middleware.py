@@ -6,7 +6,8 @@ from .signals import (
     access_denied, sql_injection_detected, mass_access_detected, 
     off_hours_access, enumeration_attempt, privilege_escalation,
     abnormal_navigation_speed, repeated_account_consultation,
-    unauthorized_modification, transaction_threshold_exceeded
+    unauthorized_modification, transaction_threshold_exceeded,
+    suspicious_url_detected, suspicious_chars_detected, web_scan_detected
 )
 import re
 
@@ -31,6 +32,10 @@ class SecurityAccessMiddleware:
         return status
 
     def __call__(self, request):
+        # 0. Ignorer le favicon pour éviter les faux positifs de scan
+        if 'favicon.ico' in request.path:
+            return self.get_response(request)
+
         ip = request.META.get('REMOTE_ADDR')
         
         # 0. Vérification Blacklist
@@ -59,19 +64,36 @@ class SecurityAccessMiddleware:
                     count=requests_count
                 )
 
-        # 1. Détection SQL Injection
-        if self.is_rule_active('sql_injection'):
+        # 1. Détection SQL Injection & Caractères Suspects (XSS)
+        sql_active = self.is_rule_active('sql_injection')
+        xss_active = self.is_rule_active('suspicious_chars')
+        
+        if sql_active or xss_active:
             for key, value in list(request.GET.items()) + list(request.POST.items()):
-                if re.search(r"(?i)(\b(SELECT|UNION|DROP|OR 1=1|--|;)\b)", str(value)):
-                    if request.user.is_authenticated:
-                        sql_injection_detected.send(
-                            sender=None, username=request.user.username,
-                            ip=request.META.get('REMOTE_ADDR'), payload=str(value)
-                        )
-                    # return HttpResponseForbidden("Requête bloquée.")
+                val_str = str(value)
+                # SQLi
+                if sql_active and re.search(r"(?i)(\b(SELECT|UNION|DROP|OR 1=1|--|;)\b)", val_str):
+                    sql_injection_detected.send(
+                        sender=None, username=user.username if user.is_authenticated else 'anonymous',
+                        ip=ip, payload=val_str
+                    )
+                # XSS / Caractères suspects
+                if xss_active and re.search(r"(?i)(<script|alert\(|onload=|onerror=|javascript:)", val_str):
+                    suspicious_chars_detected.send(
+                        sender=None, username=user.username if user.is_authenticated else 'anonymous',
+                        ip=ip, payload=val_str
+                    )
+
+        # 1.bis Détection Manipulation d'URL (Path Traversal / Fichiers sensibles)
+        if self.is_rule_active('suspicious_url'):
+            url_path = request.path.lower()
+            if re.search(r"(\.\.\/|\.\.\\|/etc/passwd|\.env|\.git|\.php|wp-admin|cmd\.exe)", url_path):
+                suspicious_url_detected.send(
+                    sender=None, username=user.username if user.is_authenticated else 'anonymous',
+                    ip=ip, url=request.path
+                )
 
         # 2. Détection Énumération
-        ip = request.META.get('REMOTE_ADDR')
         if self.is_rule_active('enumeration'):
             if not request.user.is_authenticated and 'login' in request.path:
                 username_tried = request.POST.get('username')
@@ -83,8 +105,23 @@ class SecurityAccessMiddleware:
                     if len(tried_list) > 5:
                         enumeration_attempt.send(sender=None, ip=ip, tried_usernames=list(tried_list))
 
-        # --- Suite du traitement ---
+        # --- Suite du traitement (Post-Response) ---
         response = self.get_response(request)
+
+        # 6. Détection Scan Web (Surveillance globale des 404)
+        if response.status_code == 404 and self.is_rule_active('web_scan_404'):
+            key_404 = f"scan_404_{ip}"
+            count_404 = cache.get(key_404, 0) + 1
+            cache.set(key_404, count_404, 60)
+            
+            try:
+                rule_scan = SecurityRule.objects.get(code='web_scan_404')
+                limit_404 = rule_scan.parameters.get('limit', 10)
+            except:
+                limit_404 = 10
+                
+            if count_404 > limit_404:
+                web_scan_detected.send(sender=None, ip=ip, count=count_404)
 
         if not user.is_authenticated:
             return response
@@ -96,11 +133,12 @@ class SecurityAccessMiddleware:
             forbidden_patterns = ['/admin/', '/security/', '/users/manage/', '/manage-rules/', '/rules/']
             is_forbidden = any(path.startswith(pattern) for pattern in forbidden_patterns)
             
-            if is_forbidden and user.role == 'utilisateur':
-                # Alerte Elévation de privilèges
-                privilege_escalation.send(sender=None, username=user.username, ip=ip)
+            # Exception : la page statistics est autorisée pour tous (vue filtrée par rôle)
+            if '/security/statistics/' in path:
+                is_forbidden = False
                 
-                # Alerte Accès refusé
+            if is_forbidden and user.role == 'utilisateur':
+                privilege_escalation.send(sender=None, username=user.username, ip=ip)
                 access_denied.send(
                     sender=None, username=user.username, ip=ip, requested_url=request.path
                 )
@@ -116,8 +154,6 @@ class SecurityAccessMiddleware:
         # 5. Règle 7 : Accès hors horaires
         if self.is_rule_active('off_hours'):
             current_hour = timezone.now().hour
-            
-            # Récupération des paramètres dynamiques
             from .models import SecurityRule
             try:
                 rule = SecurityRule.objects.get(code='off_hours')
@@ -126,12 +162,11 @@ class SecurityAccessMiddleware:
             except:
                 start, end = 22, 6
 
-            # Logique de détection de plage horaire (gère le passage à minuit)
             is_off_hours = False
-            if start > end: # Ex: 22h à 6h
+            if start > end: # 22h à 6h
                 if current_hour >= start or current_hour <= end:
                     is_off_hours = True
-            else: # Ex: 9h à 17h (inverse)
+            else:
                 if current_hour >= start and current_hour <= end:
                     is_off_hours = True
 

@@ -14,7 +14,7 @@ from security.signals import (
     unauthorized_modification, privilege_escalation
 )
 from security.models import SecurityRule
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 
 def is_admin(user):
     return user.is_superuser or user.role == 'admin'
@@ -24,6 +24,17 @@ class CustomUserCreationForm(UserCreationForm):
     class Meta:
         model = CustomUser
         fields = ['username']
+
+class UserAdminCreationForm(UserCreationForm):
+    class Meta:
+        model = CustomUser
+        fields = ('username', 'role', 'is_locked')
+
+class UserAdminEditForm(UserChangeForm):
+    password = None # On ne gère pas le mot de passe ici par simplicité
+    class Meta:
+        model = CustomUser
+        fields = ('username', 'role', 'is_locked', 'is_active')
 
 def register_view(request):
     if request.method == 'POST':
@@ -55,7 +66,11 @@ def register_view(request):
     return render(request, 'core/register.html', {'form': form})
 
 def login_view(request):
+    next_url = request.POST.get('next') or request.GET.get('next')
+    
     if request.user.is_authenticated:
+        if next_url:
+            return redirect(next_url)
         if request.user.role in ['admin', 'analyste'] or request.user.is_superuser:
             return redirect('security_dashboard')
         return redirect('data')
@@ -67,12 +82,17 @@ def login_view(request):
         if user and not user.is_locked:
             login(request, user)
             messages.success(request, f"Bienvenue {user.username} !")
+            if next_url:
+                try:
+                    return redirect(next_url)
+                except:
+                    pass
             if user.role in ['admin', 'analyste'] or user.is_superuser:
                 return redirect('security_dashboard')
             return redirect('data')
         else:
             messages.error(request, "Identifiants invalides ou compte verrouillé")
-    return render(request, 'core/login.html')
+    return render(request, 'core/login.html', {'next': next_url})
 
 @login_required
 def profile_view(request):
@@ -281,8 +301,6 @@ def logout_view(request):
     logout(request)
     return redirect('login')
 
-    return redirect('login')
-
 @login_required
 @user_passes_test(is_admin)
 def users_manage_view(request):
@@ -339,3 +357,54 @@ def change_user_role(request, user_id):
             user_to_mod.save()
             messages.success(request, f"Rôle de {user_to_mod.username} changé en {user_to_mod.get_role_display()}.")
     return redirect('users_manage')
+
+@login_required
+@user_passes_test(is_admin)
+def user_create_view(request):
+    """Vue pour qu'un admin crée un nouvel utilisateur"""
+    if request.method == 'POST':
+        form = UserAdminCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Utilisateur créé avec succès.")
+            return redirect('users_manage')
+        else:
+            messages.error(request, "Erreur lors de la création de l'utilisateur.")
+    else:
+        form = UserAdminCreationForm()
+    return render(request, 'core/user_form.html', {'form': form, 'title': 'Nouvel Utilisateur'})
+
+@login_required
+@user_passes_test(is_admin)
+def user_edit_view(request, user_id):
+    """Vue pour qu'un admin modifie un utilisateur existant"""
+    target_user = get_object_or_404(CustomUser, id=user_id)
+    if target_user.is_superuser:
+        messages.error(request, "Modification de super-utilisateur impossible via ce formulaire.")
+        return redirect('users_manage')
+        
+    if request.method == 'POST':
+        form = UserAdminEditForm(request.POST, instance=target_user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Utilisateur {target_user.username} mis à jour.")
+            return redirect('users_manage')
+        else:
+            messages.error(request, "Erreur lors de la mise à jour.")
+    else:
+        form = UserAdminEditForm(instance=target_user)
+    return render(request, 'core/user_form.html', {'form': form, 'title': f'Modifier {target_user.username}'})
+
+@login_required
+@user_passes_test(is_admin)
+def user_detail_view(request, user_id):
+    """Fiche détaillée d'un utilisateur pour l'admin"""
+    target_user = get_object_or_404(CustomUser, id=user_id)
+    user_events = SecurityEvent.objects.filter(username=target_user.username).order_by('-timestamp')[:50]
+    user_comptes = CompteBancaire.objects.filter(owner=target_user)
+    
+    return render(request, 'core/user_detail.html', {
+        'target_user': target_user,
+        'events': user_events,
+        'comptes': user_comptes
+    })

@@ -1,99 +1,211 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<div class="max-w-screen-2xl mx-auto">
-    <!-- En-tête -->
-    <div class="flex justify-between items-end mb-10">
+<div class="max-w-screen-2xl mx-auto px-4">
+    <!-- En-tête Dynamique Style GlassAdmin -->
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-12 gap-6">
         <div>
-            <h1 class="text-4xl font-semibold text-slate-900 dark:text-white">Gestion des Alertes</h1>
-            <p class="text-slate-600 dark:text-slate-400 mt-2">Analysez et traitez les incidents de sécurité détectés par le SIEM</p>
+            <div class="flex items-center gap-3 mb-2">
+                <span class="flex h-3 w-3 bg-red-500 rounded-full animate-pulse"></span>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-red-500">SIEM Ops Central</span>
+            </div>
+            <h1 class="text-4xl font-semibold bg-gradient-to-r from-red-500 via-violet-500 to-indigo-500 bg-clip-text text-transparent">
+                Gestion des Alertes SIEM
+            </h1>
+            <p class="opacity-60 mt-3 max-w-xl text-sm leading-relaxed">
+                Analyse approfondie des incidents de sécurité détectés. Les alertes critiques nécessitent une attention immédiate.
+            </p>
         </div>
-        <div class="flex gap-4">
-            <a href="{% url 'security_dashboard' %}" class="px-6 py-3 glass rounded-3xl hover:bg-white/10 transition flex items-center gap-3">
-                <i class="fa-solid fa-arrow-left"></i>
-                Retour Dashboard
+        
+        <div class="flex flex-wrap gap-4">
+            <div class="flex bg-black/20 backdrop-blur-md border border-white/10 rounded-3xl p-1 shadow-inner overflow-x-auto custom-scrollbar">
+                <a href="{% url 'alerts_list' %}" 
+                   class="px-5 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap
+                   {% if not current_level %}bg-white/10 text-white shadow-sm{% else %}opacity-40 hover:opacity-100{% endif %}">
+                   Tous <span class="px-2 py-0.5 bg-white/10 rounded-full text-[10px]">{{ stats.total }}</span>
+                </a>
+                <a href="?level=critical" 
+                   class="px-5 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap
+                   {% if current_level == 'critical' %}bg-red-500/20 text-red-400 shadow-sm{% else %}opacity-40 hover:opacity-100{% endif %}">
+                   Critiques <span class="px-2 py-0.5 bg-red-500/20 rounded-full text-[10px]">{{ stats.critical }}</span>
+                </a>
+                <a href="?level=high" 
+                   class="px-5 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap
+                   {% if current_level == 'high' %}bg-orange-500/20 text-orange-400 shadow-sm{% else %}opacity-40 hover:opacity-100{% endif %}">
+                   Élevés <span class="px-2 py-0.5 bg-orange-500/20 rounded-full text-[10px]">{{ stats.high }}</span>
+                </a>
+                <a href="?level=medium" 
+                   class="px-5 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap
+                   {% if current_level == 'medium' %}bg-yellow-500/20 text-yellow-400 shadow-sm{% else %}opacity-40 hover:opacity-100{% endif %}">
+                   Moyens <span class="px-2 py-0.5 bg-yellow-500/20 rounded-full text-[10px]">{{ stats.medium }}</span>
+                </a>
+                <a href="?level=low" 
+                   class="px-5 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap
+                   {% if current_level == 'low' %}bg-emerald-500/20 text-emerald-400 shadow-sm{% else %}opacity-40 hover:opacity-100{% endif %}">
+                   Faibles <span class="px-2 py-0.5 bg-emerald-500/20 rounded-full text-[10px]">{{ stats.low }}</span>
+                </a>
+            </div>
+            <a href="{% url 'export_alerts_csv' %}" 
+               class="flex items-center gap-3 px-6 py-3 bg-emerald-600 text-white rounded-3xl hover:bg-emerald-700 transition shadow-lg shadow-emerald-500/20">
+                <i class="fa-solid fa-file-csv"></i>
+                <span class="font-medium text-sm">Exporter</span>
+            </a>
+            <a href="{% url 'security_dashboard' %}" class="px-6 py-3 glass rounded-3xl hover:bg-white/10 transition flex items-center gap-3 border border-white/5">
+                <i class="fa-solid fa-arrow-left opacity-60"></i>
+                <span class="font-medium text-sm">Dashboard</span>
             </a>
         </div>
     </div>
 
-    <!-- Filtres rapides -->
-    <div class="flex gap-3 mb-10 overflow-x-auto pb-4">
-        <a href="{% url 'alerts_list' %}" 
-           class="px-6 py-3 rounded-2xl transition whitespace-nowrap {% if not current_level %}bg-violet-600 text-white shadow-lg shadow-violet-500/20{% else %}glass hover:bg-white/10{% endif %}">
-            Toutes les alertes
-        </a>
-        <a href="?level=critical" 
-           class="px-6 py-3 rounded-2xl transition whitespace-nowrap {% if current_level == 'critical' %}bg-red-600 text-white shadow-lg shadow-red-500/20{% else %}glass hover:bg-white/10{% endif %}">
-            Critiques 🚨
-        </a>
-        <a href="?level=high" 
-           class="px-6 py-3 rounded-2xl transition whitespace-nowrap {% if current_level == 'high' %}bg-amber-600 text-white shadow-lg shadow-amber-500/20{% else %}glass hover:bg-white/10{% endif %}">
-            Élevées ⚠️
-        </a>
-        <a href="?level=medium" 
-           class="px-6 py-3 rounded-2xl transition whitespace-nowrap {% if current_level == 'medium' %}bg-yellow-600 text-white shadow-lg shadow-yellow-500/20{% else %}glass hover:bg-white/10{% endif %}">
-            Moyennes 🔴
-        </a>
+    <!-- Statistiques Rapides -->
+    <div class="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-10">
+        <div class="glass p-4 rounded-3xl border border-white/5">
+            <p class="text-[10px] uppercase font-bold opacity-40">Actifs</p>
+            <p class="text-2xl font-bold mt-1">{{ stats.active }}</p>
+        </div>
+        <div class="glass p-4 rounded-3xl border border-red-500/10">
+            <p class="text-[10px] uppercase font-bold text-red-500/60">Critiques</p>
+            <p class="text-2xl font-bold mt-1 text-red-500">{{ stats.critical }}</p>
+        </div>
+        <div class="glass p-4 rounded-3xl border border-orange-500/10">
+            <p class="text-[10px] uppercase font-bold text-orange-500/60">Élevés</p>
+            <p class="text-2xl font-bold mt-1 text-orange-500">{{ stats.high }}</p>
+        </div>
+        <div class="glass p-4 rounded-3xl border border-yellow-500/10">
+            <p class="text-[10px] uppercase font-bold text-yellow-500/60">Moyens</p>
+            <p class="text-2xl font-bold mt-1 text-yellow-500">{{ stats.medium }}</p>
+        </div>
+        <div class="glass p-4 rounded-3xl border border-emerald-500/10">
+            <p class="text-[10px] uppercase font-bold text-emerald-500/60">Faibles</p>
+            <p class="text-2xl font-bold mt-1 text-emerald-500">{{ stats.low }}</p>
+        </div>
+        <div class="glass p-4 rounded-3xl border border-violet-500/10">
+            <p class="text-[10px] uppercase font-bold text-violet-500/60">Total SIEM</p>
+            <p class="text-2xl font-bold mt-1 text-violet-400">{{ stats.total }}</p>
+        </div>
     </div>
 
-    <!-- Liste des alertes -->
-    <div class="grid grid-cols-1 gap-6">
+    <!-- Liste d'Alertes Redessinée -->
+    <div class="space-y-6 mb-20">
         {% for alert in alerts %}
-        <div class="glass rounded-3xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 border border-white/5 transition hover:border-white/10 {% if alert.resolved %}opacity-60{% endif %}">
-            <div class="flex items-start gap-6">
-                <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shrink-0
-                    {% if alert.alert_level == 'critical' %}bg-red-500/20 text-red-500
-                    {% elif alert.alert_level == 'high' %}bg-amber-500/20 text-amber-500
-                    {% elif alert.alert_level == 'medium' %}bg-yellow-500/20 text-yellow-500
-                    {% else %}bg-emerald-500/20 text-emerald-500{% endif %}">
-                    {% if alert.alert_level == 'critical' %}<i class="fa-solid fa-skull-crossbones"></i>
-                    {% elif alert.alert_level == 'high' %}<i class="fa-solid fa-triangle-exclamation"></i>
-                    {% else %}<i class="fa-solid fa-bell"></i>{% endif %}
-                </div>
-                
-                <div class="space-y-1">
-                    <div class="flex items-center gap-3">
-                        <span class="text-xs font-bold uppercase tracking-widest
-                            {% if alert.alert_level == 'critical' %}text-red-400
-                            {% elif alert.alert_level == 'high' %}text-amber-400
-                            {% else %}text-violet-400{% endif %}">
-                            INCIDENT {{ alert.alert_level|upper }}
-                        </span>
-                        <span class="text-xs text-slate-500">•</span>
-                        <span class="text-xs text-slate-500">{{ alert.timestamp|date:"d/m/Y à H:i:s" }}</span>
+        <div class="group relative overflow-hidden glass rounded-3xl border border-white/5 p-6 hover:border-violet-500/30 transition-all duration-500 shadow-lg hover:shadow-violet-500/10
+            {% if alert.resolved %}opacity-50 grayscale-[0.5]{% endif %}">
+            
+            {% if alert.alert_level == 'critical' and not alert.resolved %}
+            <div class="absolute top-0 right-0 p-2 bg-red-500/20 text-red-500 text-[10px] font-black uppercase rounded-bl-2xl border-l border-b border-red-500/10 animate-pulse">
+                Action Immédiate Requise
+            </div>
+            {% endif %}
+
+            <div class="flex flex-col lg:flex-row gap-8 items-start lg:items-center justify-between">
+                <!-- Icone et Message -->
+                <div class="flex gap-6 items-start flex-1">
+                    <div class="relative">
+                        <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-inner relative z-10
+                            {% if alert.alert_level == 'critical' %}bg-gradient-to-br from-red-500 to-orange-600 text-white animate-pulse-slow
+                            {% elif alert.alert_level == 'high' %}bg-gradient-to-br from-orange-500 to-amber-600 text-white
+                            {% elif alert.alert_level == 'medium' %}bg-gradient-to-br from-yellow-400 to-amber-500 text-black
+                            {% else %}bg-gradient-to-br from-emerald-500 to-teal-600 text-white{% endif %}">
+                            
+                            {% if alert.alert_level == 'critical' %}<i class="fa-solid fa-biohazard"></i>
+                            {% elif alert.alert_level == 'high' %}<i class="fa-solid fa-triangle-exclamation"></i>
+                            {% elif alert.alert_level == 'medium' %}<i class="fa-solid fa-circle-exclamation"></i>
+                            {% else %}<i class="fa-solid fa-shield-halved"></i>{% endif %}
+                        </div>
+                        <div class="absolute -inset-2 blur-xl opacity-20 group-hover:opacity-40 transition duration-500
+                            {% if alert.alert_level == 'critical' %}bg-red-500
+                            {% elif alert.alert_level == 'high' %}bg-orange-500
+                            {% else %}bg-violet-500{% endif %}">
+                        </div>
                     </div>
-                    <h3 class="text-xl font-medium text-slate-900 dark:text-white">{{ alert.message }}</h3>
-                    {% if alert.source_event %}
-                    <p class="text-sm text-slate-500 mt-2">
-                        <i class="fa-solid fa-fingerprint mr-1"></i> ID Event: #{{ alert.source_event.id }} | {{ alert.source_event.event_type }}
-                    </p>
+
+                    <div class="space-y-2">
+                        <div class="flex flex-wrap items-center gap-4">
+                            <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border
+                                {% if alert.alert_level == 'critical' %}border-red-500/30 text-red-400 bg-red-500/10
+                                {% elif alert.alert_level == 'high' %}border-orange-500/30 text-orange-400 bg-orange-500/10
+                                {% else %}border-violet-500/30 text-violet-400 bg-violet-500/10{% endif %}">
+                                ID #{{ alert.id }} • {{ alert.alert_level|upper }}
+                            </span>
+                            <span class="text-xs opacity-40 font-mono">
+                                <i class="fa-regular fa-calendar-check mr-1 text-emerald-500"></i> {{ alert.timestamp|date:"d M Y" }}
+                            </span>
+                            <span class="text-xs opacity-40 font-mono">
+                                <i class="fa-regular fa-clock mr-1 text-violet-400"></i> {{ alert.timestamp|date:"H:i:s" }}
+                            </span>
+                        </div>
+                        <h3 class="text-2xl font-semibold leading-tight group-hover:bg-gradient-to-r from-white to-white/60 group-hover:bg-clip-text group-hover:text-transparent transition-all">
+                            {{ alert.message }}
+                        </h3>
+                        {% if alert.source_event %}
+                        <div class="flex items-center gap-3 pt-2">
+                            <div class="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-xl border border-white/5 text-[10px] font-mono opacity-60">
+                                <i class="fa-solid fa-network-wired text-violet-500"></i>
+                                SOURCE: {{ alert.source_event.ip_address|default:"N/A" }}
+                            </div>
+                            <div class="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-xl border border-white/5 text-[10px] font-mono opacity-60">
+                                <i class="fa-solid fa-user-shield text-emerald-500"></i>
+                                USER: {{ alert.source_event.username|default:"System" }}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center gap-3 w-full lg:w-auto border-t lg:border-t-0 pt-6 lg:pt-0">
+                    {% if alert.resolved %}
+                    <div class="flex items-center gap-3 px-8 py-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-3xl font-bold text-sm tracking-wide">
+                        <i class="fa-solid fa-circle-check text-xl"></i>
+                        INCIDENT RÉSOLU
+                    </div>
+                    {% else %}
+                    <a href="{% url 'resolve_alert' alert.id %}" 
+                       class="flex-1 lg:flex-none flex items-center justify-center gap-3 px-10 py-4 bg-emerald-500 text-white rounded-3xl font-bold text-sm transition-all shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 hover:scale-105 active:scale-95">
+                        <i class="fa-solid fa-check-double"></i>
+                        RÉSOUDRE
+                    </a>
+                    <button class="w-12 h-14 flex items-center justify-center glass rounded-2xl hover:bg-white/10 transition border border-white/5 hover:border-violet-500/30 text-violet-400">
+                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                    </button>
                     {% endif %}
                 </div>
             </div>
-
-            <div class="flex items-center gap-4 border-t md:border-t-0 pt-4 md:pt-0">
-                {% if alert.resolved %}
-                <div class="flex items-center gap-2 px-6 py-3 bg-emerald-500/10 text-emerald-500 rounded-2xl font-semibold">
-                    <i class="fa-solid fa-check-double"></i>
-                    RÉSOLUE
-                </div>
-                {% else %}
-                <a href="{% url 'resolve_alert' alert.id %}" 
-                   class="px-8 py-3 bg-white/10 hover:bg-emerald-600 text-white rounded-2xl transition-all font-semibold flex items-center gap-3 shadow-lg hover:shadow-emerald-500/20">
-                    <i class="fa-solid fa-check"></i>
-                    MARQUER COMME RÉSOLUE
-                </a>
-                {% endif %}
-            </div>
         </div>
         {% empty %}
-        <div class="glass rounded-3xl p-20 text-center">
-            <div class="text-6xl mb-6">🏜️</div>
-            <h3 class="text-2xl font-medium text-slate-400">Aucune alerte détectée</h3>
-            <p class="text-slate-500 mt-2">Tout semble calme sur le réseau pour le moment.</p>
+        <div class="glass rounded-3xl p-32 text-center border border-white/5 relative overflow-hidden">
+            <div class="absolute -top-24 -left-24 w-64 h-64 bg-violet-500/10 blur-[100px] rounded-full"></div>
+            <div class="absolute -bottom-24 -right-24 w-64 h-64 bg-emerald-500/10 blur-[100px] rounded-full"></div>
+            
+            <div class="relative z-10">
+                <div class="w-24 h-24 bg-gradient-to-br from-violet-500/20 to-emerald-500/20 rounded-full flex items-center justify-center text-5xl mx-auto mb-8 shadow-inner border border-white/5 group">
+                    <i class="fa-solid fa-shield-check text-emerald-500 group-hover:scale-110 transition duration-500"></i>
+                </div>
+                <h3 class="text-3xl font-bold bg-gradient-to-r from-white to-white/40 bg-clip-text text-transparent">Système de Surveillance Optimal</h3>
+                <p class="max-w-md mx-auto opacity-40 mt-4 text-sm">
+                    Toutes les alertes ont été traitées. Le SIEM ne détecte aucune menace active correspondant à vos filtres actuels.
+                </p>
+                <a href="{% url 'alerts_list' %}" class="inline-block mt-10 px-8 py-3 glass rounded-3xl hover:bg-white/10 transition text-sm font-bold border border-white/10 opacity-60 hover:opacity-100">
+                    Réinitialiser les filtres
+                </a>
+            </div>
         </div>
         {% endfor %}
     </div>
 </div>
+
+<style>
+    @keyframes pulse-slow {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.05); opacity: 0.9; }
+    }
+    .animate-pulse-slow {
+        animation: pulse-slow 3s infinite ease-in-out;
+    }
+    .glass {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(16px);
+    }
+</style>
 
 {% endblock %}

@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-10 px-6">
+    <div class="mb-8">
+        <a href="{% url 'users_manage' %}" class="text-slate-500 hover:text-violet-500 transition flex items-center gap-2 mb-4">
+            <i class="fa-solid fa-arrow-left"></i> Retour à la liste
+        </a>
+        <h1 class="text-3xl font-bold text-slate-100 italic">{{ title }}</h1>
+        <p class="text-slate-400">Configurez les accès et les permissions de ce compte.</p>
+    </div>
+
+    <div class="glass p-10 rounded-3xl border border-white/10 shadow-2xl">
+        <form method="POST">
+            {% csrf_token %}
+            
+            <div class="space-y-6">
+                {{ form|crispy }}
+            </div>
+
+            <div class="mt-10 pt-6 border-t border-white/5 flex gap-4">
+                <button type="submit" class="px-8 py-3 bg-violet-600 text-white rounded-2xl hover:bg-violet-700 transition font-semibold shadow-lg shadow-violet-600/20">
+                    Enregistrer les modifications
+                </button>
+                <a href="{% url 'users_manage' %}" class="px-8 py-3 bg-white/5 text-slate-300 rounded-2xl hover:bg-white/10 transition font-semibold">
+                    Annuler
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    /* Correction cosmétique pour les labels crispy en dark mode */
+    .glass label {
+        color: #94a3b8 !important; /* slate-400 */
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    .glass input, .glass select, .glass textarea {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: white !important;
+        border-radius: 1rem !important;
+        padding: 0.75rem 1rem !important;
+    }
+    .glass input:focus, .glass select:focus {
+        border-color: #7c3aed !important; /* violet-600 */
+        box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1) !important;
+    }
+    .text-danger { color: #f87171 !important; font-size: 0.875rem; margin-top: 0.25rem; }
+    .help-block { color: #64748b !important; font-size: 0.75rem; font-style: italic; }
+</style>
+{% endblock %}

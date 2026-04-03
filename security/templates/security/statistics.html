@@ -3,63 +3,273 @@
 
 <div class="max-w-screen-2xl mx-auto">
     <!-- En-tête Dynamique -->
-    <div class="mb-10">
-        <h1 class="text-4xl font-semibold text-slate-900 dark:text-white">
-            {% if user.role == 'admin' or user.role == 'analyste' %}
-                Analyse des Incidents Actifs & Finances
-            {% else %}
-                Résumé de votre Activité Financière
-            {% endif %}
-        </h1>
-        <p class="text-slate-600 dark:text-slate-400 mt-2">Menaces non résolues et liquidité du SIEM en temps réel</p>
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-10 gap-6">
+        <div>
+            <h1 class="text-4xl font-semibold bg-gradient-to-r from-violet-500 to-emerald-500 bg-clip-text text-transparent">
+                {% if user.role == 'admin' or user.role == 'analyste' %}
+                    Tableau de Bord Sécurité & Finances
+                {% else %}
+                    Résumé de votre Activité Financière
+                {% endif %}
+            </h1>
+            <p class="text-slate-600 dark:text-slate-400 mt-2">
+                {% if user.role == 'admin' or user.role == 'analyste' %}
+                    Analyse des menaces, incidents actifs et liquidité du système
+                {% else %}
+                    Surveillance de vos avoirs et transactions
+                {% endif %}
+                <span class="text-xs ml-2 px-2 py-1 bg-emerald-500/20 rounded-full">Mise à jour: {% now "d/m/Y H:i:s" %}</span>
+            </p>
+        </div>
+        
+        <div class="flex gap-4">
+            <a href="{% url 'export_filtered_results' %}" 
+               class="flex items-center gap-3 px-6 py-3 bg-emerald-600 text-white rounded-3xl hover:bg-emerald-700 transition shadow-lg shadow-emerald-500/20">
+                <i class="fa-solid fa-file-csv"></i>
+                <span class="font-medium text-sm">Exporter Données</span>
+            </a>
+            <button onclick="location.reload()" class="px-6 py-3 glass rounded-3xl hover:bg-white/10 transition border border-white/5">
+                <i class="fa-solid fa-rotate opacity-60"></i>
+            </button>
+        </div>
     </div>
 
     {% if user.role == 'admin' or user.role == 'analyste' %}
-    <!-- VUE ADMINISTRATEUR - CARDS FINANCIÈRES -->
+    <!-- VUE ADMINISTRATEUR - CARDS FINANCIÈRES ET SÉCURITÉ -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <div class="glass p-6 rounded-3xl border border-emerald-500/20 shadow-lg">
-            <p class="text-xs text-emerald-600 dark:text-emerald-500 uppercase tracking-widest font-bold">Liquidité Totale</p>
-            <p class="text-3xl font-bold mt-2">{{ stats.total_liquidity|floatformat:2 }} <span class="text-xs font-normal opacity-60">FCFA</span></p>
+        <div class="glass p-6 rounded-3xl border border-emerald-500/20 shadow-lg hover:scale-105 transition-transform duration-300">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-xs text-emerald-600 dark:text-emerald-500 uppercase tracking-widest font-bold">Liquidité Totale</p>
+                    <p class="text-3xl font-bold mt-2">{{ stats.total_liquidity|floatformat:2 }} <span class="text-xs font-normal opacity-60">FCFA</span></p>
+                    <p class="text-xs text-emerald-400 mt-1">+{{ stats.liquidity_trend|default:12 }}% vs mois dernier</p>
+                </div>
+                <i class="fa-solid fa-coins text-3xl text-emerald-500 opacity-50"></i>
+            </div>
         </div>
-        <div class="glass p-6 rounded-3xl border border-violet-500/20 shadow-lg">
-            <p class="text-xs text-violet-600 dark:text-violet-500 uppercase tracking-widest font-bold">Capital Moyen</p>
-            <p class="text-3xl font-bold mt-2">{{ stats.avg_balance|floatformat:2 }} <span class="text-xs font-normal opacity-60">FCFA</span></p>
+        
+        <div class="glass p-6 rounded-3xl border border-violet-500/20 shadow-lg hover:scale-105 transition-transform duration-300">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-xs text-violet-600 dark:text-violet-500 uppercase tracking-widest font-bold">Capital Moyen</p>
+                    <p class="text-3xl font-bold mt-2">{{ stats.avg_balance|floatformat:2 }} <span class="text-xs font-normal opacity-60">FCFA</span></p>
+                    <p class="text-xs text-violet-400 mt-1">Sur {{ stats.total_accounts }} comptes</p>
+                </div>
+                <i class="fa-solid fa-chart-line text-3xl text-violet-500 opacity-50"></i>
+            </div>
         </div>
-        <div class="glass p-6 rounded-3xl border border-slate-400/20 shadow-lg">
-            <p class="text-xs text-slate-500 uppercase tracking-widest font-bold">Alertes Mensuelles</p>
-            <p class="text-3xl font-bold mt-2">{{ stats.history|length }}</p>
+        
+        <div class="glass p-6 rounded-3xl border border-orange-500/20 shadow-lg hover:scale-105 transition-transform duration-300">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-xs text-orange-600 dark:text-orange-500 uppercase tracking-widest font-bold">Alertes Actives</p>
+                    <p class="text-3xl font-bold mt-2">{{ stats.active_alerts|default:0 }}</p>
+                    <p class="text-xs text-orange-400 mt-1">
+                        {% if stats.critical_alerts > 0 %}
+                            {{ stats.critical_alerts }} critiques
+                        {% else %}
+                            Aucune critique
+                        {% endif %}
+                    </p>
+                </div>
+                <i class="fa-solid fa-bell text-3xl text-orange-500 opacity-50"></i>
+            </div>
         </div>
-        <div class="glass p-6 rounded-3xl border border-emerald-500/20 shadow-lg">
-            <p class="text-xs text-emerald-600 dark:text-emerald-500 uppercase tracking-widest font-bold">Système Uptime</p>
-            <p class="text-3xl font-bold mt-2 text-emerald-600 dark:text-emerald-400">99.9%</p>
+        
+        <div class="glass p-6 rounded-3xl border border-emerald-500/20 shadow-lg hover:scale-105 transition-transform duration-300">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-xs text-emerald-600 dark:text-emerald-500 uppercase tracking-widest font-bold">Système Uptime</p>
+                    <p class="text-3xl font-bold mt-2 text-emerald-600 dark:text-emerald-400">99.9%</p>
+                    <p class="text-xs text-emerald-400 mt-1">Disponibilité continue</p>
+                </div>
+                <i class="fa-solid fa-server text-3xl text-emerald-500 opacity-50"></i>
+            </div>
         </div>
     </div>
 
+    <!-- Première ligne de graphiques -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
         <!-- Graphique 1 : Événements par Type -->
-        <div class="glass rounded-3xl p-8 border border-black/5 dark:border-white/10 shadow-xl">
-            <h3 class="text-xl font-medium mb-8 italic">Types d'Incidents</h3>
-            <canvas id="typeChart" height="250"></canvas>
+        <div class="glass rounded-3xl p-8 border border-black/5 dark:border-white/10 shadow-xl hover:shadow-2xl transition-shadow">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-medium italic">Types d'Incidents</h3>
+                <div class="text-xs opacity-40">Total: {{ stats.total_events|default:0 }}</div>
+            </div>
+            <div style="height: 280px;">
+                <canvas id="typeChart"></canvas>
+            </div>
+            <div class="mt-4 grid grid-cols-2 gap-2 text-xs">
+                {% for item in stats.by_type %}
+                <div class="flex justify-between items-center px-2 py-1 rounded bg-white/5">
+                    <span class="opacity-70">{{ item.event_type|upper }}</span>
+                    <span class="font-bold text-violet-400">{{ item.count }}</span>
+                </div>
+                {% endfor %}
+            </div>
         </div>
 
         <!-- Graphique 2 : Distribution des Comptes par Rôle -->
-        <div class="glass rounded-3xl p-8 border border-black/5 dark:border-white/10 shadow-xl">
-            <h3 class="text-xl font-medium mb-8 italic">Répartition des Comptes</h3>
-            <canvas id="classChart" height="250"></canvas>
+        <div class="glass rounded-3xl p-8 border border-black/5 dark:border-white/10 shadow-xl hover:shadow-2xl transition-shadow">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-medium italic">Répartition des Comptes</h3>
+                <i class="fa-solid fa-users text-violet-400"></i>
+            </div>
+            <div style="height: 280px;">
+                <canvas id="classChart"></canvas>
+            </div>
+            <div class="mt-4 space-y-1 text-xs">
+                {% for item in stats.role_dist %}
+                <div class="flex justify-between items-center px-2 py-1 rounded bg-white/5">
+                    <span class="opacity-70">
+                        {% if item.owner__role == 'admin' %}👑 Administrateur
+                        {% elif item.owner__role == 'analyste' %}🔍 Analyste
+                        {% else %}👤 Utilisateur{% endif %}
+                    </span>
+                    <span class="font-bold text-violet-400">{{ item.count }} comptes</span>
+                </div>
+                {% endfor %}
+            </div>
         </div>
 
-        <!-- Graphique 3 : Niveaux de Sévérité (Actives) -->
-        <div class="glass rounded-3xl p-8 border border-black/5 dark:border-white/10 shadow-xl">
-            <h3 class="text-xl font-medium mb-8 italic">Niveaux de Sévérité (Alertes Actives)</h3>
-            <canvas id="severityChart" height="250"></canvas>
+        <!-- Graphique 3 : Niveaux de Sévérité (Alertes Actives) -->
+        <div class="glass rounded-3xl p-8 border border-black/5 dark:border-white/10 shadow-xl hover:shadow-2xl transition-shadow">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-medium italic">Niveaux de Sévérité</h3>
+                <span class="text-xs bg-red-500/20 px-2 py-1 rounded-full">{{ stats.active_alerts|default:0 }} actives</span>
+            </div>
+            <div style="height: 280px;">
+                <canvas id="severityChart"></canvas>
+            </div>
+            <div class="mt-4 grid grid-cols-2 gap-2 text-xs">
+                {% for item in stats.by_severity %}
+                <div class="flex justify-between items-center px-2 py-1 rounded bg-white/5">
+                    <span class="opacity-70">
+                        {% if item.alert_level == 'critical' %}🔴 Critique
+                        {% elif item.alert_level == 'high' %}🟠 Élevée
+                        {% elif item.alert_level == 'medium' %}🟡 Moyenne
+                        {% else %}🟢 Faible{% endif %}
+                    </span>
+                    <span class="font-bold 
+                        {% if item.alert_level == 'critical' %}text-red-500
+                        {% elif item.alert_level == 'high' %}text-orange-500
+                        {% elif item.alert_level == 'medium' %}text-yellow-500
+                        {% else %}text-emerald-500{% endif %}">
+                        {{ item.count }}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
         </div>
     </div>
 
-    <!-- Graphique 4 : Historique Temporel -->
+    <!-- Graphique 4 : Historique Temporel des Alertes -->
     <div class="glass rounded-3xl p-8 border border-black/5 dark:border-white/10 shadow-xl mb-12">
-        <h3 class="text-xl font-medium mb-8 italic">Activités de Sécurité (7 derniers jours)</h3>
-        <div style="height: 250px;">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-medium italic">Évolution des Alertes (7 derniers jours)</h3>
+            <div class="flex gap-2">
+                <button onclick="changeHistoryRange('7')" class="text-xs px-3 py-1 rounded-full bg-violet-500/20 hover:bg-violet-500/40 transition">7j</button>
+                <button onclick="changeHistoryRange('30')" class="text-xs px-3 py-1 rounded-full bg-violet-500/20 hover:bg-violet-500/40 transition">30j</button>
+                <button onclick="changeHistoryRange('90')" class="text-xs px-3 py-1 rounded-full bg-violet-500/20 hover:bg-violet-500/40 transition">90j</button>
+            </div>
+        </div>
+        <div style="height: 320px;">
             <canvas id="historyChart"></canvas>
+        </div>
+        <div class="mt-4 text-center">
+            <small class="opacity-40">
+                <i class="fa-solid fa-chart-line"></i> Tendance: 
+                {% if stats.trend_percentage > 0 %}
+                    <span class="text-red-400">+{{ stats.trend_percentage }}% d'augmentation</span>
+                {% else %}
+                    <span class="text-emerald-400">{{ stats.trend_percentage }}% de baisse</span>
+                {% endif %}
+            </small>
+        </div>
+    </div>
+
+    <!-- Graphiques supplémentaires pour une analyse complète -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+        <!-- Top IPs Sources -->
+        <div class="glass rounded-3xl p-8 border border-black/5 dark:border-white/10 shadow-xl">
+            <h3 class="text-xl font-medium italic mb-6">Top 10 IPs Sources d'Alertes</h3>
+            <div class="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar">
+                {% for ip in stats.top_ips %}
+                <div class="flex justify-between items-center p-3 rounded-2xl bg-white/5 border border-white/5 hover:border-violet-500/30 transition">
+                    <div>
+                        <span class="font-mono text-sm">{{ ip.ip_address }}</span>
+                        <span class="text-xs opacity-40 ml-2">{{ ip.location|default:"Origine inconnue" }}</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-24 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-violet-500 to-red-500 rounded-full" style="width: {{ ip.percentage }}%"></div>
+                        </div>
+                        <span class="px-3 py-1 bg-violet-500/20 text-violet-400 rounded-full text-xs font-bold">{{ ip.count }} alertes</span>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-center py-10 opacity-40 italic">Aucune donnée IP disponible</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Distribution par Heure -->
+        <div class="glass rounded-3xl p-8 border border-black/5 dark:border-white/10 shadow-xl">
+            <h3 class="text-xl font-medium italic mb-6">Activité par Heure (24h)</h3>
+            <div style="height: 300px;">
+                <canvas id="hourlyChart"></canvas>
+            </div>
+            <div class="mt-4 text-center text-xs opacity-40">
+                <i class="fa-regular fa-clock"></i> Heure de pointe: {{ stats.peak_hour|default:"—" }}h
+            </div>
+        </div>
+    </div>
+
+    <!-- Tableau des Alertes Récentes -->
+    <div class="glass rounded-3xl p-8 border border-black/5 dark:border-white/10 shadow-xl mb-12">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-medium italic">Alertes Récentes Non Résolues</h3>
+            <a href="{% url 'alerts_list' %}" class="text-xs text-violet-400 hover:text-white transition">Voir toutes <i class="fa-solid fa-arrow-right ml-1"></i></a>
+        </div>
+        <div class="overflow-x-auto max-h-[400px] overflow-y-auto custom-scrollbar">
+            <table class="w-full">
+                <thead class="sticky top-0 bg-black/40 backdrop-blur-sm">
+                    <tr class="text-left text-xs uppercase tracking-widest opacity-60 border-b border-white/10">
+                        <th class="px-4 py-3">Date/Heure</th>
+                        <th class="px-4 py-3">Sévérité</th>
+                        <th class="px-4 py-3">Message</th>
+                        <th class="px-4 py-3">Source IP</th>
+                        <th class="px-4 py-3">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    {% for alert in stats.recent_alerts %}
+                    <tr class="hover:bg-white/5 transition">
+                        <td class="px-4 py-3 font-mono text-xs opacity-60">{{ alert.timestamp|date:"d/m/Y H:i:s" }}</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 rounded-full text-xs font-bold
+                                {% if alert.alert_level == 'critical' %}bg-red-500 text-white
+                                {% elif alert.alert_level == 'high' %}bg-orange-500 text-white
+                                {% elif alert.alert_level == 'medium' %}bg-yellow-500 text-black
+                                {% else %}bg-emerald-500 text-white{% endif %}">
+                                {{ alert.alert_level|upper }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-sm">{{ alert.message|truncatechars:50 }}</td>
+                        <td class="px-4 py-3 font-mono text-xs">{{ alert.source_ip|default:"—" }}</td>
+                        <td class="px-4 py-3">
+                            <a href="{% url 'resolve_alert' alert.id %}" class="text-xs px-3 py-1 rounded-full bg-emerald-500/20 hover:bg-emerald-500/40 transition">
+                                Résoudre
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-10 opacity-40 italic">Aucune alerte active</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -80,6 +290,10 @@
                     <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Statut Global</p>
                     <p class="text-xl font-semibold text-emerald-500">OPTIMAL</p>
                 </div>
+                <div class="px-6 py-2 glass rounded-2xl border border-white/5">
+                    <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Dernière Activité</p>
+                    <p class="text-sm font-semibold">{{ stats.last_activity|default:"Aujourd'hui" }}</p>
+                </div>
             </div>
         </div>
 
@@ -87,7 +301,7 @@
             <h3 class="text-xl font-medium mb-6 flex items-center gap-3">
                 <i class="fa-solid fa-list-check text-violet-400"></i> Vos Comptes & Liquidités
             </h3>
-            <div class="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+            <div class="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                 {% for acc in stats.accounts %}
                 <div class="flex justify-between items-center p-5 rounded-2xl bg-white/5 border border-white/5 hover:border-violet-500/30 transition shadow-inner">
                     <div>
@@ -95,7 +309,8 @@
                         <p class="text-[10px] text-slate-500 uppercase tracking-widest">{{ acc.titulaire }}</p>
                     </div>
                     <div class="text-right">
-                        <p class="text-lg font-bold text-emerald-400">{{ acc.solde }} FCFA</p>
+                        <p class="text-lg font-bold text-emerald-400">{{ acc.solde|floatformat:2 }} FCFA</p>
+                        <p class="text-[9px] opacity-40">Dernière mise à jour: {{ acc.last_update|date:"d/m/Y" }}</p>
                     </div>
                 </div>
                 {% empty %}
@@ -104,116 +319,120 @@
             </div>
         </div>
     </div>
+
+    <!-- Graphique d'évolution pour l'utilisateur -->
+    <div class="glass rounded-3xl p-8 border border-black/5 dark:border-white/10 shadow-xl">
+        <h3 class="text-xl font-medium mb-6 italic">Évolution de vos avoirs (12 mois)</h3>
+        <div style="height: 300px;">
+            <canvas id="userBalanceChart"></canvas>
+        </div>
+    </div>
     {% endif %}
 </div>
 
-<!-- Scripts pour Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const isDark = document.documentElement.classList.contains('dark');
+        const textColor = isDark ? '#c4b5fd' : '#4c1d95';
+        const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
+
         {% if user.role == 'admin' or user.role == 'analyste' or user.is_superuser %}
         
-        // Détection dynamique du thème pour Chart.js
-        const isDayMode = document.documentElement.classList.contains('dark');
-        const chartColor = isDayMode ? '#8b5cf6' : '#8b5cf6';
-        const gridColor = isDayMode ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)';
-
-        // Configuration Chart.js globale
-        Chart.defaults.color = chartColor;
-        Chart.defaults.font.family = "'Inter', sans-serif";
-
-        // 1. Chart par Type
-        new Chart(document.getElementById('typeChart').getContext('2d'), {
+        // 1. Chart par Type (Doughnut)
+        const typeCtx = document.getElementById('typeChart').getContext('2d');
+        new Chart(typeCtx, {
             type: 'doughnut',
             data: {
                 labels: [{% for item in stats.by_type %}'{{ item.event_type|upper }}',{% endfor %}],
                 datasets: [{
                     data: [{% for item in stats.by_type %}{{ item.count }},{% endfor %}],
-                    backgroundColor: ['#8b5cf6', '#3b82f6', '#ef4444', '#f59e0b', '#10b981'],
+                    backgroundColor: ['#8b5cf6', '#3b82f6', '#ef4444', '#f59e0b', '#10b981', '#ec489a'],
                     borderWidth: 0,
-                    hoverOffset: 20
+                    hoverOffset: 15
                 }]
             },
             options: {
-                plugins: { legend: { display: false } },
-                cutout: '75%'
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: textColor, font: { size: 10 } } },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw} événements` } }
+                },
+                cutout: '65%'
             }
         });
 
-        // 2. Chart Distribution des Comptes par Rôle
+        // 2. Chart Distribution des Comptes par Rôle (Polar Area)
         const classLabels = [{% for item in stats.role_dist %}'{{ item.owner__role|upper }}',{% endfor %}];
         const classColors = classLabels.map(role => {
-            if (role === 'ADMIN') return '#9f1239';      // Rouge Rubis
-            if (role === 'ANALYSTE') return '#7c3aed';   // Violet
-            return '#059669';                           // Émeraude pour Utilisateur
+            if (role === 'ADMIN') return '#ef4444';
+            if (role === 'ANALYSTE') return '#8b5cf6';
+            return '#10b981';
         });
 
         new Chart(document.getElementById('classChart').getContext('2d'), {
             type: 'polarArea',
             data: {
-                labels: classLabels,
+                labels: classLabels.map(l => l === 'ADMIN' ? 'Administrateur' : (l === 'ANALYSTE' ? 'Analyste' : 'Utilisateur')),
                 datasets: [{
                     data: [{% for item in stats.role_dist %}{{ item.count }},{% endfor %}],
                     backgroundColor: classColors,
-                    borderWidth: 1,
-                    borderColor: gridColor
+                    borderWidth: 0
                 }]
             },
             options: {
-                scales: {
-                    r: { 
-                        grid: { color: gridColor }, 
-                        ticks: { display: false },
-                        pointLabels: { color: chartColor, font: { size: 12 } }
-                    }
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: textColor, font: { size: 11 } } }
                 },
-                plugins: { legend: { display: false } }
+                scales: { r: { ticks: { display: false }, grid: { color: gridColor } } }
             }
         });
 
-        // 3. Chart par Sévérité (Alertes Actives)
+        // 3. Chart par Sévérité (Bar Chart)
         const sevLabels = [{% for item in stats.by_severity %}'{{ item.alert_level|upper }}',{% endfor %}];
         const sevColors = sevLabels.map(label => {
             if (label.includes('CRITICAL')) return '#ef4444';
-            if (label.includes('HIGH')) return '#f59e0b';
-            if (label.includes('MEDIUM')) return '#3b82f6';
-            return '#10b981'; // Low
+            if (label.includes('HIGH')) return '#f97316';
+            if (label.includes('MEDIUM')) return '#eab308';
+            return '#22c55e';
         });
 
         new Chart(document.getElementById('severityChart').getContext('2d'), {
             type: 'bar',
             data: {
-                labels: sevLabels,
+                labels: sevLabels.map(l => l === 'CRITICAL' ? 'Critique' : (l === 'HIGH' ? 'Élevée' : (l === 'MEDIUM' ? 'Moyenne' : 'Faible'))),
                 datasets: [{
-                    label: 'Alertes',
+                    label: 'Nombre d\'alertes',
                     data: [{% for item in stats.by_severity %}{{ item.count }},{% endfor %}],
                     backgroundColor: sevColors,
-                    borderRadius: 12
+                    borderRadius: 8,
+                    barPercentage: 0.7
                 }]
             },
             options: {
-                plugins: { legend: { display: false } },
-                scales: { 
-                    y: { 
-                        beginAtZero: true, 
-                        grid: { color: gridColor },
-                        ticks: { color: chartColor }
-                    },
-                    x: { 
-                        grid: { display: false },
-                        ticks: { color: chartColor }
-                    }
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.raw} alertes` } }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor, stepSize: 1 } },
+                    x: { grid: { display: false }, ticks: { color: textColor } }
                 }
             }
         });
 
-        // 4. Chart Historique (7 derniers jours)
-        const ctx = document.getElementById('historyChart').getContext('2d');
-        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-        gradient.addColorStop(0, 'rgba(139, 92, 246, 0.5)');
+        // 4. Chart Historique (Line Chart)
+        const historyCtx = document.getElementById('historyChart').getContext('2d');
+        const gradient = historyCtx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(139, 92, 246, 0.4)');
         gradient.addColorStop(1, 'rgba(139, 92, 246, 0)');
 
-        new Chart(ctx, {
+        new Chart(historyCtx, {
             type: 'line',
             data: {
                 labels: [{% for item in stats.history %}'{{ item.day }}',{% endfor %}],
@@ -224,41 +443,95 @@
                     borderWidth: 3,
                     backgroundColor: gradient,
                     fill: true,
-                    tension: 0.45,
+                    tension: 0.4,
                     pointRadius: 5,
                     pointBackgroundColor: '#8b5cf6',
-                    pointBorderColor: isDayMode ? '#fff' : 'rgba(255,255,255,0.8)',
+                    pointBorderColor: isDark ? '#fff' : '#fff',
                     pointBorderWidth: 2,
-                    pointHoverRadius: 8,
+                    pointHoverRadius: 8
                 }]
             },
             options: {
+                responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { display: false },
-                    tooltip: {
-                        backgroundColor: isDayMode ? 'rgba(241, 245, 249, 0.9)' : 'rgba(15, 23, 42, 0.9)',
-                        titleColor: '#8b5cf6',
-                        bodyColor: chartColor,
-                        bodyFont: { size: 14 }
-                    }
+                    tooltip: { mode: 'index', intersect: false }
                 },
-                scales: { 
-                    y: { 
-                        beginAtZero: true,
-                        ticks: { stepSize: 1, color: chartColor },
-                        grid: { color: gridColor } 
-                    },
-                    x: { 
-                        ticks: { color: chartColor },
-                        grid: { display: false } 
-                    }
+                scales: {
+                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor, stepSize: 1 } },
+                    x: { grid: { display: false }, ticks: { color: textColor } }
                 }
             }
         });
 
+        // 5. Chart Horaire (Bar Chart)
+        const hourlyCtx = document.getElementById('hourlyChart').getContext('2d');
+        new Chart(hourlyCtx, {
+            type: 'bar',
+            data: {
+                labels: [{% for hour in stats.hourly_activity %}'{{ hour.hour }}h',{% endfor %}],
+                datasets: [{
+                    label: 'Activité',
+                    data: [{% for hour in stats.hourly_activity %}{{ hour.count }},{% endfor %}],
+                    backgroundColor: '#a78bfa',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor } },
+                    x: { grid: { display: false }, ticks: { color: textColor, maxRotation: 45, minRotation: 45 } }
+                }
+            }
+        });
+
+        {% else %}
+        
+        // Graphique pour utilisateur simple
+        const userCtx = document.getElementById('userBalanceChart').getContext('2d');
+        const userGradient = userCtx.createLinearGradient(0, 0, 0, 400);
+        userGradient.addColorStop(0, 'rgba(16, 185, 129, 0.4)');
+        userGradient.addColorStop(1, 'rgba(16, 185, 129, 0)');
+
+        new Chart(userCtx, {
+            type: 'line',
+            data: {
+                labels: [{% for item in stats.balance_history %}'{{ item.month }}',{% endfor %}],
+                datasets: [{
+                    label: 'Solde (FCFA)',
+                    data: [{% for item in stats.balance_history %}{{ item.balance }},{% endfor %}],
+                    borderColor: '#10b981',
+                    borderWidth: 3,
+                    backgroundColor: userGradient,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#10b981'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.raw.toLocaleString()} FCFA` } }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor, callback: (v) => v.toLocaleString() } },
+                    x: { grid: { display: false }, ticks: { color: textColor } }
+                }
+            }
+        });
+        
         {% endif %}
     });
+
+    function changeHistoryRange(days) {
+        window.location.href = `?range=${days}`;
+    }
 </script>
 
 <style>
@@ -267,17 +540,32 @@
     }
     @keyframes pulse-slow {
         0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.9; transform: scale(0.98); }
+        50% { opacity: 0.95; transform: scale(0.99); }
     }
     .custom-scrollbar::-webkit-scrollbar {
-        width: 4px;
+        width: 6px;
+        height: 6px;
     }
     .custom-scrollbar::-webkit-scrollbar-track {
         background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
     }
     .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: rgba(139, 92, 246, 0.3);
+        background: rgba(139, 92, 246, 0.4);
         border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: rgba(139, 92, 246, 0.6);
+    }
+    .glass {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(12px);
+    }
+    .dark .glass {
+        background: rgba(0, 0, 0, 0.2);
+    }
+    .transition {
+        transition: all 0.3s ease;
     }
 </style>
 

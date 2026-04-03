@@ -52,3 +52,35 @@ def user_statistics_api(request):
         'total_solde': float(total_solde),
         'recent_activity': recent_activity,
     })
+
+@login_required
+def live_events_api(request):
+    """Point d'entrée pour le polling en temps réel des nouveaux événements"""
+    if request.user.role not in ['admin', 'analyste'] and not request.user.is_superuser:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+
+    since_timestamp = request.GET.get('since', 0)
+    try:
+        since_dt = timezone.datetime.fromtimestamp(float(since_timestamp), tz=timezone.get_current_timezone())
+    except:
+        since_dt = timezone.now() - timezone.timedelta(minutes=1)
+
+    new_events = SecurityEvent.objects.filter(timestamp__gt=since_dt).order_by('-timestamp')[:20]
+    
+    events_data = []
+    for e in new_events:
+        events_data.append({
+            'id': e.id,
+            'time': e.timestamp.strftime("%H:%M:%S"),
+            'timestamp': e.timestamp.timestamp(),
+            'username': e.username,
+            'ip_address': e.ip_address,
+            'event_type': e.event_type,
+            'severity': e.severity,
+            'description': e.description
+        })
+
+    return JsonResponse({
+        'events': events_data,
+        'latest_timestamp': new_events[0].timestamp.timestamp() if new_events else since_timestamp
+    })

@@ -58,6 +58,7 @@
 
             <form method="post" class="space-y-6">
                 {% csrf_token %}
+                <input type="hidden" name="next" value="{{ next }}">
                 <input type="text" name="email_verify" style="display:none" tabindex="-1" autocomplete="off">
                 <div>
                     <input type="text" name="username" placeholder="Nom d'utilisateur" required
